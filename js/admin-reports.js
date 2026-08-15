@@ -59,18 +59,21 @@ const adminReports = {
         let attendances = [];
 
         try {
-            const [empResult, jurnalResult, leaveResult, izinResult, attResult] = await Promise.all([
+            const [empResult, journalResult, leaveResult, izinResult, attResult, settingsResult] = await Promise.all([
                 api.getEmployees(),
                 api.getAllJournals(),
                 api.getAllLeaves(),
                 api.getAllIzin(),
-                api.getAllAttendance()
-            ]);
+                api.getAllAttendance(),
+                api.getSettings()
+        ]);
             employees = empResult.data || [];
             jurnals = jurnalResult.data || [];
             leaves = leaveResult.data || [];
             izinList = izinResult.data || [];
             attendances = attResult.data || [];
+
+            this.settings = settingsResult.data || {};
         } catch (error) {
             console.error('Error loading report data:', error);
             employees = storage.get('admin_employees', []);
@@ -311,16 +314,16 @@ const adminReports = {
 
         if (!employee) return null;
 
-        // ==========================================
-        // AMBIL SELURUH ABSENSI PEGAWAI
-        // ==========================================
+        // ============================================
+        // DATA ABSENSI PEGAWAI
+        // ============================================
         let empAttendance = this.rawAttendance.filter(
             a => String(a.userId) === String(employee.id)
         );
 
-        // ==========================================
+        // ============================================
         // FILTER BULAN
-        // ==========================================
+        // ============================================
         if (monthFilter) {
             empAttendance = empAttendance.filter(a => {
                 if (!a.date) return false;
@@ -336,16 +339,16 @@ const adminReports = {
             });
         }
 
-        // ==========================================
+        // ============================================
         // HITUNG HADIR
-        // ==========================================
+        // ============================================
         const present = empAttendance.filter(
             a => a.clockIn
         ).length;
 
-        // ==========================================
+        // ============================================
         // HITUNG TERLAMBAT
-        // ==========================================
+        // ============================================
         const late = empAttendance.filter(
             a =>
                 a.clockIn &&
@@ -353,12 +356,11 @@ const adminReports = {
                 String(a.status).toLowerCase() === 'terlambat'
         ).length;
 
-        // ==========================================
-        // HITUNG CUTI / IZIN
-        // ==========================================
+        // ============================================
+        // HITUNG CUTI / IZIN APPROVED
+        // ============================================
         let leaveDays = 0;
 
-        // ---------- CUTI ----------
         const empLeaves = this.rawLeaves.filter(
             l =>
                 String(l.userId) === String(employee.id) &&
@@ -372,9 +374,13 @@ const adminReports = {
             const start = new Date(leave.startDate);
             const end = new Date(leave.endDate);
 
-            if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
+            if (
+                isNaN(start.getTime()) ||
+                isNaN(end.getTime())
+            ) return;
 
-            // Kalau tidak ada filter bulan
+            // Jika tidak ada filter bulan,
+            // gunakan seluruh durasi cuti.
             if (!monthFilter) {
                 leaveDays += Math.floor(
                     (end - start) / (1000 * 60 * 60 * 24)
@@ -393,16 +399,15 @@ const adminReports = {
                 0
             );
 
-            // Cari irisan tanggal cuti dengan bulan terpilih
-            const overlapStart = start > filterStart
-                ? start
-                : filterStart;
+            // Cari irisan cuti dengan bulan yang dipilih
+            const overlapStart =
+                start > filterStart ? start : filterStart;
 
-            const overlapEnd = end < filterEnd
-                ? end
-                : filterEnd;
+            const overlapEnd =
+                end < filterEnd ? end : filterEnd;
 
             if (overlapStart <= overlapEnd) {
+
                 const days = Math.floor(
                     (overlapEnd - overlapStart) /
                     (1000 * 60 * 60 * 24)
@@ -412,38 +417,91 @@ const adminReports = {
             }
         });
 
-        // ---------- IZIN ----------
-        const empIzin = this.rawIzin.filter(
-            i =>
-                String(i.userId) === String(employee.id) &&
-                String(i.status).toLowerCase() === 'approved'
+        // ============================================
+        // HITUNG HARI KERJA BERDASARKAN SHIFT
+        // ============================================
+        let workDays = 0;
+
+        if (monthFilter && this.settings) {
+
+            const scheduleKey = `shift_schedule_${monthFilter}`;
+
+            let scheduleData = null;
+
+            // Ambil jadwal dari settings
+            if (
+                this.settings[scheduleKey]
+            ) {
+                try {
+                    scheduleData =
+                        typeof this.settings[scheduleKey] === 'string'
+                            ? JSON.parse(this.settings[scheduleKey])
+                            : this.settings[scheduleKey];
+                } catch (error) {
+                    console.error(
+                        'Error parsing shift schedule:',
+                        error
+                    );
+                    scheduleData = null;
+                }
+            }
+
+            // Jika jadwal ditemukan
+            if (
+                scheduleData &&
+                scheduleData[employee.id]
+            ) {
+
+                const employeeSchedule =
+                    scheduleData[employee.id];
+
+                const [year, month] =
+                    monthFilter.split('-').map(Number);
+
+                const daysInMonth =
+                    new Date(year, month, 0).getDate();
+
+                for (
+                    let day = 1;
+                    day <= daysInMonth;
+                    day++
+                ) {
+
+                    const shift =
+                        employeeSchedule[day];
+
+                    // Tidak ada jadwal = tidak dihitung
+                    if (!shift) continue;
+
+                    // Libur = bukan hari kerja
+                    if (
+                        String(shift).toLowerCase() ===
+                        'libur'
+                    ) {
+                        continue;
+                    }
+
+                    workDays++;
+                }
+            }
+        }
+
+        // ============================================
+        // HITUNG ABSEN
+        // ============================================
+        //
+        // Hari kerja berdasarkan jadwal
+        // dikurangi hadir dan cuti/izin.
+        //
+        let absent = Math.max(
+            0,
+            workDays - present - leaveDays
         );
 
-        empIzin.forEach(izin => {
-
-            if (!izin.date) return;
-
-            if (!monthFilter) {
-                leaveDays += parseInt(izin.duration) || 1;
-                return;
-            }
-
-            const date = new Date(izin.date);
-
-            if (isNaN(date.getTime())) return;
-
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-
-            if (`${year}-${month}` === monthFilter) {
-                leaveDays += parseInt(izin.duration) || 1;
-            }
-        });
-
-        // ==========================================
-        // TOTAL
-        // ==========================================
-        const total = present + leaveDays;
+        // ============================================
+        // TOTAL HARI KERJA
+        // ============================================
+        const total = present + absent;
 
         return {
             userId: employee.id,
@@ -452,36 +510,39 @@ const adminReports = {
 
             present: present,
             late: late,
-
-            // Untuk sementara tetap mengikuti struktur
-            // tampilan yang sekarang:
-            absent: leaveDays,
-
+            absent: absent,
             total: total
         };
 
-    }).filter(row => {
+    })
+    .filter(row => {
 
         if (!row) return false;
 
-        // ==========================================
+        // ============================================
         // FILTER DEPARTEMEN
-        // ==========================================
+        // ============================================
         const matchesDept =
             !deptFilter ||
             row.department === deptFilter;
 
-        // ==========================================
+        // ============================================
         // FILTER STATUS
-        // ==========================================
+        // ============================================
         const matchesStatus =
             !statusFilter ||
-
-            (statusFilter === 'present' && row.present > 0) ||
-
-            (statusFilter === 'absent' && row.absent > 0) ||
-
-            (statusFilter === 'late' && row.late > 0);
+            (
+                statusFilter === 'present' &&
+                row.present > 0
+            ) ||
+            (
+                statusFilter === 'absent' &&
+                row.absent > 0
+            ) ||
+            (
+                statusFilter === 'late' &&
+                row.late > 0
+            );
 
         return matchesDept && matchesStatus;
     });

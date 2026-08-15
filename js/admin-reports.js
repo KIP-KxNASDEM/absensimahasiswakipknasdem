@@ -5,18 +5,13 @@
 
 const adminReports = {
 
-    // ==================================================
-    // DATA
-    // ==================================================
-
     attendanceData: [],
     jurnalData: [],
     leaveData: [],
 
     rawAttendance: [],
     rawEmployees: [],
-    rawStudents: [],
-    rawJournals: [],
+    rawJurnals: [],
     rawLeaves: [],
     rawIzin: [],
 
@@ -35,6 +30,1757 @@ const adminReports = {
 
         leave: {
             month: '',
+            type: '',
+            status: ''
+        }
+    },
+
+
+    // ==================================================
+    // INITIALIZATION
+    // ==================================================
+
+    async initAttendanceReports() {
+
+        if (!auth.isAdmin()) {
+            toast.error('Anda tidak memiliki akses!');
+            router.navigate('dashboard');
+            return;
+        }
+
+        await this.loadData();
+
+        this.bindAttendanceEvents();
+        this.populateEmployeeFilter();
+        this.renderAttendanceReports();
+    },
+
+
+    async initJurnalReports() {
+
+        if (!auth.isAdmin()) {
+            toast.error('Anda tidak memiliki akses!');
+            router.navigate('dashboard');
+            return;
+        }
+
+        await this.loadData();
+
+        this.bindJurnalEvents();
+        this.populateEmployeeFilter();
+        this.renderJurnalReports();
+    },
+
+
+    async initLeaveReports() {
+
+        if (!auth.isAdmin()) {
+            toast.error('Anda tidak memiliki akses!');
+            router.navigate('dashboard');
+            return;
+        }
+
+        await this.loadData();
+
+        this.bindLeaveEvents();
+        this.renderLeaveReports();
+    },
+
+
+    // ==================================================
+    // LOAD DATA
+    // ==================================================
+
+    async loadData() {
+
+        let students = [];
+        let jurnals = [];
+        let leaves = [];
+        let izinList = [];
+        let attendances = [];
+
+        try {
+
+            const [
+                studentResult,
+                jurnalResult,
+                leaveResult,
+                izinResult,
+                attResult
+            ] = await Promise.all([
+
+                api.getStudents(),
+                api.getAllJournals(),
+                api.getAllLeaves(),
+                api.getAllIzin(),
+                api.getAllAttendance()
+
+            ]);
+
+
+            students = studentResult.data || [];
+            jurnals = jurnalResult.data || [];
+            leaves = leaveResult.data || [];
+            izinList = izinResult.data || [];
+            attendances = attResult.data || [];
+
+
+        } catch (error) {
+
+            console.error('Error loading report data:', error);
+
+            students = storage.get('admin_employees', []);
+            jurnals = storage.get('jurnals', []);
+            leaves = storage.get('leaves', []);
+            izinList = storage.get('izin', []);
+            attendances = storage.get('attendance', []);
+        }
+
+
+        // Store raw data
+        this.rawAttendance = attendances;
+        this.rawEmployees = students;
+        this.rawJurnals = jurnals;
+        this.rawLeaves = leaves;
+        this.rawIzin = izinList;
+
+
+        // ==================================================
+        // ATTENDANCE
+        // ==================================================
+
+        this.buildAttendanceData();
+
+
+        // ==================================================
+        // JURNAL
+        // ==================================================
+
+        const currentUser = auth.getCurrentUser();
+
+        this.jurnalData = jurnals.map(j => {
+
+            let student = students.find(
+                e => String(e.id) === String(j.userId)
+            );
+
+
+            if (!student && currentUser) {
+
+                student = {
+                    name: currentUser.name,
+                    department: currentUser.department || '-'
+                };
+            }
+
+
+            if (!student) {
+
+                student = {
+                    name: 'Mahasiswa',
+                    department: '-'
+                };
+            }
+
+
+            return {
+
+                date: j.date,
+
+                name: student.name,
+
+                department: student.department,
+
+                tasks: j.tasks || '-',
+
+                achievements: j.achievements || '-',
+
+                obstacles: j.obstacles || '-',
+
+                plan: j.plan || '-',
+
+                photo: j.photo || null,
+
+                status: j.tasks ? 'filled' : 'empty',
+
+                updatedAt: j.updatedAt
+            };
+        });
+
+
+        // ==================================================
+        // LEAVE + IZIN
+        // ==================================================
+
+        this.leaveData = [
+
+            ...leaves.map(l => {
+
+                const student = students.find(
+                    e => String(e.id) === String(l.userId)
+                );
+
+                return {
+
+                    userId: l.userId,
+
+                    name: student ? student.name : 'Mahasiswa',
+
+                    department: student ? student.department : '-',
+
+                    type:
+                        l.type === 'annual'
+                            ? 'Cuti'
+                            : (l.typeLabel || l.type || 'Cuti'),
+
+                    dates:
+                        l.startDate === l.endDate
+                            ? l.startDate
+                            : `${l.startDate} - ${l.endDate}`,
+
+                    startDate: l.startDate,
+
+                    endDate: l.endDate,
+
+                    duration: l.duration || 1,
+
+                    reason: l.reason || '-',
+
+                    status: l.status
+                };
+            }),
+
+
+            ...izinList.map(i => {
+
+                const student = students.find(
+                    e => String(e.id) === String(i.userId)
+                );
+
+                return {
+
+                    userId: i.userId,
+
+                    name: student ? student.name : 'Mahasiswa',
+
+                    department: student ? student.department : '-',
+
+                    type: 'Izin',
+
+                    dates: i.date,
+
+                    startDate: i.date,
+
+                    endDate: i.date,
+
+                    duration: i.duration || 1,
+
+                    reason: i.reason || '-',
+
+                    status: i.status
+                };
+            })
+        ];
+    },
+
+
+    // ==================================================
+    // BUILD ATTENDANCE DATA
+    // ==================================================
+
+    buildAttendanceData() {
+
+        const students = this.rawEmployees || [];
+        const attendances = this.rawAttendance || [];
+        const leaves = this.rawLeaves || [];
+        const izinList = this.rawIzin || [];
+
+
+        this.attendanceData = students.map(student => {
+
+            const studentAttendance = attendances.filter(a => {
+
+                return String(a.userId) === String(student.id);
+
+            });
+
+
+            let present = 0;
+            let late = 0;
+
+
+            studentAttendance.forEach(a => {
+
+                if (a.clockIn) {
+
+                    present++;
+
+                    if (
+                        a.status &&
+                        String(a.status).toLowerCase() === 'terlambat'
+                    ) {
+                        late++;
+                    }
+                }
+            });
+
+
+            // Approved leave
+            const studentLeaves = leaves.filter(l => {
+
+                return (
+                    String(l.userId) === String(student.id) &&
+                    String(l.status).toLowerCase() === 'approved'
+                );
+
+            });
+
+
+            // Approved izin
+            const studentIzin = izinList.filter(i => {
+
+                return (
+                    String(i.userId) === String(student.id) &&
+                    String(i.status).toLowerCase() === 'approved'
+                );
+
+            });
+
+
+            let leaveDays = 0;
+
+
+            studentLeaves.forEach(l => {
+
+                leaveDays += parseInt(l.duration, 10) || 1;
+
+            });
+
+
+            studentIzin.forEach(i => {
+
+                leaveDays += parseInt(i.duration, 10) || 1;
+
+            });
+
+
+            const absent = leaveDays;
+
+
+            return {
+
+                id: student.id,
+
+                name: student.name,
+
+                department: student.department || '-',
+
+                present: present,
+
+                late: late,
+
+                absent: absent,
+
+                total: present + absent
+            };
+        });
+    },
+
+
+    // ==================================================
+    // EMPLOYEE / STUDENT FILTER
+    // ==================================================
+
+    populateEmployeeFilter() {
+
+        const students =
+            this.rawEmployees ||
+            storage.get('admin_employees', []);
+
+
+        const select =
+            document.getElementById('jurnal-employee-filter');
+
+
+        if (select) {
+
+            select.innerHTML =
+                '<option value="">Semua Mahasiswa</option>' +
+
+                students
+                    .map(student =>
+                        `<option value="${student.name}">
+                            ${student.name}
+                        </option>`
+                    )
+                    .join('');
+        }
+    },
+
+
+    // ==================================================
+    // ATTENDANCE EVENTS
+    // ==================================================
+
+    bindAttendanceEvents() {
+
+        const exportBtn =
+            document.getElementById('btn-export-attendance');
+
+
+        if (exportBtn) {
+
+            exportBtn.addEventListener(
+                'click',
+                () => this.exportToExcel('attendance')
+            );
+        }
+
+
+        const printBtn =
+            document.getElementById('btn-print-attendance');
+
+
+        if (printBtn) {
+
+            printBtn.addEventListener(
+                'click',
+                () => this.printReport('attendance')
+            );
+        }
+
+
+        // PERIOD
+        const monthFilter =
+            document.getElementById('attendance-month');
+
+
+        if (monthFilter) {
+
+            this.filters.attendance.month =
+                monthFilter.value || '';
+
+
+            monthFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.attendance.month =
+                        e.target.value || '';
+
+                    this.renderAttendanceReports();
+                }
+            );
+        }
+
+
+        // DEPARTMENT
+        const deptFilter =
+            document.getElementById('report-dept-filter');
+
+
+        if (deptFilter) {
+
+            deptFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.attendance.dept =
+                        e.target.value || '';
+
+                    this.renderAttendanceReports();
+                }
+            );
+        }
+
+
+        // STATUS
+        const statusFilter =
+            document.getElementById('report-status-filter');
+
+
+        if (statusFilter) {
+
+            statusFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.attendance.status =
+                        e.target.value || '';
+
+                    this.renderAttendanceReports();
+                }
+            );
+        }
+    },
+
+
+    // ==================================================
+    // JURNAL EVENTS
+    // ==================================================
+
+    bindJurnalEvents() {
+
+        const exportBtn =
+            document.getElementById('btn-export-jurnal');
+
+
+        const printBtn =
+            document.getElementById('btn-print-jurnal');
+
+
+        if (exportBtn) {
+
+            exportBtn.addEventListener(
+                'click',
+                () => this.exportToExcel('jurnal')
+            );
+        }
+
+
+        if (printBtn) {
+
+            printBtn.addEventListener(
+                'click',
+                () => this.printReport('jurnal')
+            );
+        }
+
+
+        const monthFilter =
+            document.getElementById('jurnal-month');
+
+
+        if (monthFilter) {
+
+            this.filters.jurnal.month =
+                monthFilter.value || '';
+
+
+            monthFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.jurnal.month =
+                        e.target.value || '';
+
+                    this.renderJurnalReports();
+                }
+            );
+        }
+
+
+        const empFilter =
+            document.getElementById('jurnal-employee-filter');
+
+
+        if (empFilter) {
+
+            empFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.jurnal.employee =
+                        e.target.value || '';
+
+                    this.renderJurnalReports();
+                }
+            );
+        }
+
+
+        const statusFilter =
+            document.getElementById('jurnal-status-filter');
+
+
+        if (statusFilter) {
+
+            statusFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.jurnal.status =
+                        e.target.value || '';
+
+                    this.renderJurnalReports();
+                }
+            );
+        }
+    },
+
+
+    // ==================================================
+    // LEAVE EVENTS
+    // ==================================================
+
+    bindLeaveEvents() {
+
+        const exportBtn =
+            document.getElementById('btn-export-leave');
+
+
+        const printBtn =
+            document.getElementById('btn-print-leave');
+
+
+        if (exportBtn) {
+
+            exportBtn.addEventListener(
+                'click',
+                () => this.exportToExcel('leave')
+            );
+        }
+
+
+        if (printBtn) {
+
+            printBtn.addEventListener(
+                'click',
+                () => this.printReport('leave')
+            );
+        }
+
+
+        const monthFilter =
+            document.getElementById('leave-month');
+
+
+        if (monthFilter) {
+
+            this.filters.leave.month =
+                monthFilter.value || '';
+
+
+            monthFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.leave.month =
+                        e.target.value || '';
+
+                    this.renderLeaveReports();
+                }
+            );
+        }
+
+
+        const typeFilter =
+            document.getElementById('leave-type-filter');
+
+
+        if (typeFilter) {
+
+            typeFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.leave.type =
+                        e.target.value || '';
+
+                    this.renderLeaveReports();
+                }
+            );
+        }
+
+
+        const statusFilter =
+            document.getElementById('leave-status-filter');
+
+
+        if (statusFilter) {
+
+            statusFilter.addEventListener(
+                'change',
+                e => {
+
+                    this.filters.leave.status =
+                        e.target.value || '';
+
+                    this.renderLeaveReports();
+                }
+            );
+        }
+    },
+
+
+    // ==================================================
+    // FILTER ATTENDANCE
+    // ==================================================
+
+    getFilteredAttendance() {
+
+        const selectedMonth =
+            this.filters.attendance.month;
+
+
+        const selectedDept =
+            this.filters.attendance.dept;
+
+
+        const selectedStatus =
+            this.filters.attendance.status;
+
+
+        const attendances =
+            this.rawAttendance || [];
+
+
+        const leaves =
+            this.rawLeaves || [];
+
+
+        const izinList =
+            this.rawIzin || [];
+
+
+        return this.rawEmployees
+            .map(student => {
+
+                // Attendance sesuai periode
+                const studentAttendance =
+                    attendances.filter(a => {
+
+                        if (
+                            String(a.userId) !==
+                            String(student.id)
+                        ) {
+                            return false;
+                        }
+
+
+                        if (!selectedMonth) {
+                            return true;
+                        }
+
+
+                        const date =
+                            String(a.date || '');
+
+
+                        return date.substring(0, 7) ===
+                            selectedMonth;
+                    });
+
+
+                let present = 0;
+                let late = 0;
+
+
+                studentAttendance.forEach(a => {
+
+                    if (a.clockIn) {
+
+                        present++;
+
+
+                        if (
+                            String(a.status || '')
+                                .toLowerCase() ===
+                            'terlambat'
+                        ) {
+
+                            late++;
+                        }
+                    }
+                });
+
+
+                // Cuti sesuai periode
+                const studentLeaves =
+                    leaves.filter(l => {
+
+                        if (
+                            String(l.userId) !==
+                            String(student.id)
+                        ) {
+                            return false;
+                        }
+
+
+                        if (
+                            String(l.status)
+                                .toLowerCase() !==
+                            'approved'
+                        ) {
+                            return false;
+                        }
+
+
+                        if (!selectedMonth) {
+                            return true;
+                        }
+
+
+                        const start =
+                            String(l.startDate || '');
+
+
+                        const end =
+                            String(l.endDate || l.startDate || '');
+
+
+                        return (
+                            start.substring(0, 7) === selectedMonth ||
+                            end.substring(0, 7) === selectedMonth
+                        );
+                    });
+
+
+                // Izin sesuai periode
+                const studentIzin =
+                    izinList.filter(i => {
+
+                        if (
+                            String(i.userId) !==
+                            String(student.id)
+                        ) {
+                            return false;
+                        }
+
+
+                        if (
+                            String(i.status)
+                                .toLowerCase() !==
+                            'approved'
+                        ) {
+                            return false;
+                        }
+
+
+                        if (!selectedMonth) {
+                            return true;
+                        }
+
+
+                        return String(i.date || '')
+                            .substring(0, 7) ===
+                            selectedMonth;
+                    });
+
+
+                let absent = 0;
+
+
+                studentLeaves.forEach(l => {
+
+                    absent +=
+                        parseInt(l.duration, 10) || 1;
+                });
+
+
+                studentIzin.forEach(i => {
+
+                    absent +=
+                        parseInt(i.duration, 10) || 1;
+                });
+
+
+                const total =
+                    present + absent;
+
+
+                return {
+
+                    id: student.id,
+
+                    name: student.name,
+
+                    department:
+                        student.department || '-',
+
+                    present,
+
+                    late,
+
+                    absent,
+
+                    total
+                };
+
+            })
+            .filter(row => {
+
+                const matchesDept =
+                    !selectedDept ||
+                    row.department === selectedDept;
+
+
+                const matchesStatus =
+                    !selectedStatus ||
+
+                    (
+                        selectedStatus === 'present' &&
+                        row.present > 0
+                    ) ||
+
+                    (
+                        selectedStatus === 'absent' &&
+                        row.absent > 0
+                    ) ||
+
+                    (
+                        selectedStatus === 'late' &&
+                        row.late > 0
+                    );
+
+
+                return (
+                    matchesDept &&
+                    matchesStatus
+                );
+            });
+    },
+
+
+    // ==================================================
+    // FILTER JURNAL
+    // ==================================================
+
+    getFilteredJurnal() {
+
+        return this.jurnalData.filter(row => {
+
+            const selectedMonth =
+                this.filters.jurnal.month;
+
+
+            const matchesMonth =
+                !selectedMonth ||
+                String(row.date || '')
+                    .substring(0, 7) === selectedMonth;
+
+
+            const matchesEmp =
+                !this.filters.jurnal.employee ||
+                row.name === this.filters.jurnal.employee;
+
+
+            const matchesStatus =
+                !this.filters.jurnal.status ||
+                row.status === this.filters.jurnal.status;
+
+
+            return (
+                matchesMonth &&
+                matchesEmp &&
+                matchesStatus
+            );
+        });
+    },
+
+
+    // ==================================================
+    // FILTER LEAVE
+    // ==================================================
+
+    getFilteredLeave() {
+
+        return this.leaveData.filter(row => {
+
+            const selectedMonth =
+                this.filters.leave.month;
+
+
+            const matchesMonth =
+                !selectedMonth ||
+                String(row.startDate || row.dates || '')
+                    .substring(0, 7) === selectedMonth;
+
+
+            const matchesType =
+                !this.filters.leave.type ||
+
+                (
+                    this.filters.leave.type === 'cuti' &&
+                    row.type.toLowerCase().includes('cuti')
+                ) ||
+
+                (
+                    this.filters.leave.type === 'izin' &&
+                    row.type.toLowerCase().includes('izin')
+                ) ||
+
+                (
+                    this.filters.leave.type === 'sakit' &&
+                    row.type.toLowerCase().includes('sakit')
+                );
+
+
+            const matchesStatus =
+                !this.filters.leave.status ||
+                row.status === this.filters.leave.status;
+
+
+            return (
+                matchesMonth &&
+                matchesType &&
+                matchesStatus
+            );
+        });
+    },
+
+
+    // ==================================================
+    // RENDER ATTENDANCE
+    // ==================================================
+
+    renderAttendanceReports() {
+
+        const tbody =
+            document.getElementById(
+                'attendance-reports-body'
+            );
+
+
+        if (!tbody) return;
+
+
+        const data =
+            this.getFilteredAttendance();
+
+
+        tbody.innerHTML =
+            data.map(row => `
+
+                <tr>
+
+                    <td>
+                        <div class="employee-info">
+                            <div class="employee-details">
+                                <span class="employee-name">
+                                    ${row.name}
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        ${row.department}
+                    </td>
+
+                    <td
+                        class="text-center"
+                        style="
+                            color: var(--color-success);
+                            font-weight: 600;
+                        "
+                    >
+                        ${row.present}
+                    </td>
+
+                    <td
+                        class="text-center"
+                        style="
+                            color: var(--color-warning);
+                            font-weight: 600;
+                        "
+                    >
+                        ${row.late}
+                    </td>
+
+                    <td
+                        class="text-center"
+                        style="
+                            color: var(--color-danger);
+                            font-weight: 600;
+                        "
+                    >
+                        ${row.absent}
+                    </td>
+
+                    <td class="text-center">
+                        ${row.total}
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="btn-action view"
+                            onclick="
+                                adminReports.viewDetail(
+                                    '${row.name}'
+                                )
+                            "
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `).join('');
+
+
+        // Mobile
+        const mobileContainer =
+            document.getElementById(
+                'attendance-mobile-cards'
+            );
+
+
+        if (mobileContainer) {
+
+            mobileContainer.innerHTML =
+                data.map(row => `
+
+                    <div class="mobile-card">
+
+                        <div class="mobile-card-header">
+
+                            <span
+                                class="mobile-card-title"
+                            >
+                                ${row.name}
+                            </span>
+
+                            <span
+                                style="
+                                    font-size:
+                                    var(--font-size-xs);
+                                    color:
+                                    var(--text-muted);
+                                "
+                            >
+                                ${row.department}
+                            </span>
+
+                        </div>
+
+
+                        <div class="mobile-card-row">
+                            <span class="mobile-card-label">
+                                Hadir
+                            </span>
+
+                            <span
+                                class="mobile-card-value"
+                                style="
+                                    color:
+                                    var(--color-success);
+                                "
+                            >
+                                ${row.present}
+                            </span>
+                        </div>
+
+
+                        <div class="mobile-card-row">
+                            <span class="mobile-card-label">
+                                Terlambat
+                            </span>
+
+                            <span
+                                class="mobile-card-value"
+                                style="
+                                    color:
+                                    var(--color-warning);
+                                "
+                            >
+                                ${row.late}
+                            </span>
+                        </div>
+
+
+                        <div class="mobile-card-row">
+                            <span class="mobile-card-label">
+                                Izin/Cuti
+                            </span>
+
+                            <span
+                                class="mobile-card-value"
+                                style="
+                                    color:
+                                    var(--color-danger);
+                                "
+                            >
+                                ${row.absent}
+                            </span>
+                        </div>
+
+
+                        <div class="mobile-card-row">
+                            <span class="mobile-card-label">
+                                Total
+                            </span>
+
+                            <span class="mobile-card-value">
+                                ${row.total}
+                            </span>
+                        </div>
+
+                    </div>
+
+                `).join('');
+        }
+    },
+
+
+    // ==================================================
+    // RENDER JURNAL
+    // ==================================================
+
+    renderJurnalReports() {
+
+        const tbody =
+            document.getElementById(
+                'jurnal-reports-body'
+            );
+
+
+        if (!tbody) return;
+
+
+        const data =
+            this.getFilteredJurnal();
+
+
+        tbody.innerHTML =
+            data.map(row => `
+
+                <tr>
+
+                    <td>${row.date}</td>
+
+                    <td>${row.name}</td>
+
+                    <td>${row.department}</td>
+
+                    <td>
+                        ${row.tasks.substring(0, 30)}
+                        ${row.tasks.length > 30 ? '...' : ''}
+                    </td>
+
+                    <td>
+
+                        ${
+                            row.photo
+
+                            ? `
+                                <img
+                                    src="${row.photo}"
+                                    class="jurnal-thumbnail"
+                                    onclick="
+                                        adminReports.viewPhoto(
+                                            '${row.photo}'
+                                        )
+                                    "
+                                    title="Klik untuk melihat"
+                                >
+                            `
+
+                            : `
+                                <span class="no-photo-cell">
+                                    -
+                                </span>
+                            `
+                        }
+
+                    </td>
+
+                    <td>
+
+                        <span
+                            class="status-badge ${row.status}"
+                        >
+                            ${
+                                row.status === 'filled'
+                                    ? 'Terisi'
+                                    : 'Kosong'
+                            }
+                        </span>
+
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="btn-action view"
+                            onclick="
+                                adminReports.viewJurnalDetail(
+                                    '${row.name}',
+                                    '${row.date}'
+                                )
+                            "
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `).join('');
+    },
+
+
+    // ==================================================
+    // RENDER LEAVE
+    // ==================================================
+
+    renderLeaveReports() {
+
+        const tbody =
+            document.getElementById(
+                'leave-reports-body'
+            );
+
+
+        if (!tbody) return;
+
+
+        const data =
+            this.getFilteredLeave();
+
+
+        const statusLabels = {
+
+            pending: 'Menunggu',
+
+            approved: 'Disetujui',
+
+            rejected: 'Ditolak'
+        };
+
+
+        tbody.innerHTML =
+            data.map(row => `
+
+                <tr>
+
+                    <td>${row.name}</td>
+
+                    <td>${row.department}</td>
+
+                    <td>${row.type}</td>
+
+                    <td>${row.dates}</td>
+
+                    <td>${row.duration} hari</td>
+
+                    <td>${row.reason}</td>
+
+                    <td>
+
+                        <span
+                            class="status-badge ${row.status}"
+                        >
+                            ${
+                                statusLabels[row.status] ||
+                                row.status
+                            }
+                        </span>
+
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="btn-action view"
+                            onclick="
+                                adminReports.viewLeaveDetail(
+                                    '${row.name}'
+                                )
+                            "
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `).join('');
+    },
+
+
+    // ==================================================
+    // EXPORT
+    // ==================================================
+
+    exportToExcel(type) {
+
+        let data = [];
+        let filename = '';
+
+
+        switch (type) {
+
+            case 'attendance':
+
+                data =
+                    this.getFilteredAttendance();
+
+                filename =
+                    'Rekap_Absensi_Mahasiswa.csv';
+
+                break;
+
+
+            case 'jurnal':
+
+                data =
+                    this.getFilteredJurnal();
+
+                filename =
+                    'Rekap_Jurnal_Mahasiswa.csv';
+
+                break;
+
+
+            case 'leave':
+
+                data =
+                    this.getFilteredLeave();
+
+                filename =
+                    'Rekap_Cuti_Izin_Mahasiswa.csv';
+
+                break;
+        }
+
+
+        const csv =
+            this.convertToCSV(data);
+
+
+        this.downloadFile(
+            csv,
+            filename,
+            'text/csv'
+        );
+
+
+        toast.success(
+            `Data berhasil diexport ke ${filename}`
+        );
+    },
+
+
+    convertToCSV(data) {
+
+        if (data.length === 0) {
+            return '';
+        }
+
+
+        const headers =
+            Object.keys(data[0]);
+
+
+        const rows =
+            data.map(row =>
+
+                headers
+                    .map(header => {
+
+                        const val =
+                            row[header] ?? '';
+
+                        return `"${String(val)
+                            .replace(/"/g, '""')}"`;
+
+                    })
+                    .join(',')
+            );
+
+
+        return [
+            headers.join(','),
+            ...rows
+        ].join('\n');
+    },
+
+
+    downloadFile(
+        content,
+        filename,
+        contentType
+    ) {
+
+        const blob =
+            new Blob(
+                [content],
+                { type: contentType }
+            );
+
+
+        const url =
+            URL.createObjectURL(blob);
+
+
+        const link =
+            document.createElement('a');
+
+
+        link.href = url;
+
+        link.download = filename;
+
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+
+
+        URL.revokeObjectURL(url);
+    },
+
+
+    printReport(type) {
+
+        window.print();
+    },
+
+
+    // ==================================================
+    // DETAIL
+    // ==================================================
+
+    viewDetail(name) {
+
+        toast.info(
+            `Detail absensi mahasiswa ${name}`
+        );
+    },
+
+
+    viewJurnalDetail(name, date) {
+
+        const jurnal =
+            this.jurnalData.find(
+                j =>
+                    j.name === name &&
+                    j.date === date
+            );
+
+
+        if (!jurnal) {
+
+            toast.error(
+                'Data jurnal tidak ditemukan'
+            );
+
+            return;
+        }
+
+
+        const photoHtml =
+            jurnal.photo
+
+                ? `
+                    <div class="detail-photo-section">
+
+                        <label>
+                            Foto Lampiran:
+                        </label>
+
+                        <img
+                            src="${jurnal.photo}"
+                            alt="Foto jurnal"
+                            class="jurnal-photo-preview"
+                            onclick="
+                                window.open(
+                                    '${jurnal.photo}',
+                                    '_blank'
+                                )
+                            "
+                        >
+
+                    </div>
+                `
+
+                : `
+                    <div class="detail-photo-section">
+
+                        <label>
+                            Foto Lampiran:
+                        </label>
+
+                        <p class="no-photo">
+                            Tidak ada foto
+                        </p>
+
+                    </div>
+                `;
+
+
+        const content = `
+
+            <div class="jurnal-detail-content">
+
+                <div class="detail-row">
+                    <label>Nama:</label>
+                    <p>${jurnal.name}</p>
+                </div>
+
+                <div class="detail-row">
+                    <label>Departemen:</label>
+                    <p>${jurnal.department}</p>
+                </div>
+
+                <div class="detail-row">
+                    <label>Tanggal:</label>
+                    <p>
+                        ${dateTime.formatDate(
+                            new Date(jurnal.date),
+                            'long'
+                        )}
+                    </p>
+                </div>
+
+                <div class="detail-section">
+
+                    <label>Tugas:</label>
+
+                    <p>
+                        ${jurnal.tasks
+                            .replace(/\n/g, '<br>')}
+                    </p>
+
+                </div>
+
+                <div class="detail-section">
+
+                    <label>Pencapaian:</label>
+
+                    <p>
+                        ${jurnal.achievements
+                            .replace(/\n/g, '<br>')}
+                    </p>
+
+                </div>
+
+                <div class="detail-section">
+
+                    <label>Kendala:</label>
+
+                    <p>
+                        ${jurnal.obstacles
+                            .replace(/\n/g, '<br>')}
+                    </p>
+
+                </div>
+
+                <div class="detail-section">
+
+                    <label>Rencana:</label>
+
+                    <p>
+                        ${jurnal.plan
+                            .replace(/\n/g, '<br>')}
+                    </p>
+
+                </div>
+
+                ${photoHtml}
+
+            </div>
+        `;
+
+
+        modal.show(
+            'Detail Jurnal',
+            content,
+            [
+                {
+                    label: 'Tutup',
+                    class: 'btn-secondary',
+                    onClick: () => modal.close()
+                }
+            ]
+        );
+    },
+
+
+    viewPhoto(photoUrl) {
+
+        if (!photoUrl) {
+            return;
+        }
+
+
+        const content = `
+
+            <div class="photo-viewer-modal">
+
+                <img
+                    src="${photoUrl}"
+                    alt="Foto jurnal"
+                    class="full-photo"
+                >
+
+            </div>
+        `;
+
+
+        modal.show(
+            'Foto Lampiran',
+            content,
+            [
+
+                {
+                    label: 'Tutup',
+                    class: 'btn-secondary',
+                    onClick: () => modal.close()
+                },
+
+                {
+                    label: 'Buka di Tab Baru',
+                    class: 'btn-primary',
+                    onClick: () =>
+                        window.open(
+                            photoUrl,
+                            '_blank'
+                        )
+                }
+
+            ]
+        );
+    },
+
+
+    viewLeaveDetail(name) {
+
+        toast.info(
+            `Detail cuti/izin mahasiswa ${name}`
+        );
+    }
+};
+
+
+// ==================================================
+// GLOBAL INIT FUNCTIONS
+// ==================================================
+
+window.initAttendanceReports = () => {
+
+    adminReports.initAttendanceReports();
+
+};
+
+
+window.initJurnalReports = () => {
+
+    adminReports.initJurnalReports();
+
+};
+
+
+window.initLeaveReports = () => {
+
+    adminReports.initLeaveReports();
+
+};
+
+
+// ==================================================
+// EXPOSE
+// ==================================================
+
+window.adminReports = adminReports;            month: '',
             type: '',
             status: ''
         }

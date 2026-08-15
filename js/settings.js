@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Settings
+ * Portal Mahasiswa - Settings
  * Admin settings functionality
  */
 

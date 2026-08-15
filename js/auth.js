@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Authentication
+ * Portal Mahasiswa - Authentication
  * Handle login/logout and session management
  */
 

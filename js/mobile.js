@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Mobile Responsive
+ * Portal Mahasiswa - Mobile Responsive
  * Mobile-specific functionality
  */
 

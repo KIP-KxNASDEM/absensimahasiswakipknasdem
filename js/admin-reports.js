@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Admin Reports
+ * Portal Mahasiswa - Admin Reports
  * Reports and exports for admin
  */
 

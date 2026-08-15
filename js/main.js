@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Main JavaScript
+ * Portal Mahasiswa - Main JavaScript
  * Utility functions and shared functionality
  */
 
@@ -238,7 +238,7 @@ function initializeData() {
     // Company settings
     if (!storage.get('company')) {
         storage.set('company', {
-            name: 'Portal Karyawan',
+            name: 'Portal Mahasiswa',
             logo: ''
         });
     }
@@ -340,7 +340,7 @@ function initializeData() {
 
 // Update company name in UI
 function updateCompanyUI() {
-    const company = storage.get('company', { name: 'Portal Karyawan' });
+    const company = storage.get('company', { name: 'Portal Mahasiswa' });
 
     const elements = {
         'login-company-name': company.name,

@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Shift Schedule
+ * Portal Mahasiswa - Shift Schedule
  * Employee shift schedule management for admin
  */
 

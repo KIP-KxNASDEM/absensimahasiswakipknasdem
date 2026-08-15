@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Router
+ * Portal Mahasiswa - Router
  * Simple SPA Router for vanilla JS
  */
 
@@ -55,7 +55,7 @@ const router = {
             settings: 'Settings'
         };
         
-        const company = storage.get('company', { name: 'Portal Karyawan' });
+        const company = storage.get('company', { name: 'Portal Mahasiswa' });
         document.title = `${titles[page]} - ${company.name}`;
         
         // Update sidebar active state

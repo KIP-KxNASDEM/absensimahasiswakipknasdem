@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Jurnal Kerja
+ * Portal Mahasiswa - Jurnal Kerja
  * Daily work journal functionality
  */
 

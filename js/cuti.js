@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Cuti/Leave
+ * Portal Mahasiswa - Cuti/Leave
  * Leave request functionality
  */
 

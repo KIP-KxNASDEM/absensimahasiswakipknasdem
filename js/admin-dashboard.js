@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Admin Dashboard
+ * Portal Mahasiswa - Admin Dashboard
  * Admin dashboard with employee statistics
  */
 

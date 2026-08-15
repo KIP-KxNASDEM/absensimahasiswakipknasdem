@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Absensi
+ * Portal Mahasiswa - Absensi
  * Attendance/Clock In-Out functionality
  */
 

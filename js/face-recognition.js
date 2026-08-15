@@ -1,5 +1,5 @@
 /**
- * Portal Karyawan - Face Recognition & Location
+ * Portal Mahasiswa - Face Recognition & Location
  * Face detection and geolocation functionality
  */
 

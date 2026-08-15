@@ -90,14 +90,26 @@ const adminReports = {
         this.rawIzin = izinList;
 
         this.attendanceData = employees.map(emp => {
-            const empAtt = attendances.filter(a => String(a.userId) === String(emp.id));
+            const normalize = value => String(value ?? '').trim();
+            const empId = normalize(emp.id);
+
+            const empAtt = attendances.filter(a => {
+                const attendanceUserId = normalize(
+                    a.userId ?? a.userID ?? a.userid ?? a.employeeId ?? a.employeeID ?? a['User ID']
+                );
+                return attendanceUserId === empId;
+            });
+
             let present = 0;
             let late = 0;
 
             empAtt.forEach(a => {
-                if (a.clockIn) {
+                const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];
+                const status = normalize(a.status ?? a.Status);
+
+                if (clockIn) {
                     present++;
-                    if (a.status && a.status.toLowerCase() === 'terlambat') {
+                    if (status.toLowerCase() === 'terlambat' || status.toLowerCase() === 'late') {
                         late++;
                     }
                 }

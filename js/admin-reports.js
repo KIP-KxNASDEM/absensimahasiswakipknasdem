@@ -83,6 +83,8 @@ const adminReports = {
         // Generate attendance data from real database records
         this.rawAttendance = attendances;
         this.rawEmployees = employees;
+        this.rawLeaves = leaves;
+        this.rawIzin = izinList;
 
         this.attendanceData = employees.map(emp => {
             const empAtt = attendances.filter(a => String(a.userId) === String(emp.id));
@@ -110,6 +112,7 @@ const adminReports = {
             const absent = leaveDays;
 
             return {
+                userId: emp.id,
                 name: emp.name,
                 department: emp.department,
                 present: present,
@@ -296,15 +299,150 @@ const adminReports = {
     },
 
     getFilteredAttendance() {
-        return this.attendanceData.filter(row => {
-            const matchesDept = !this.filters.attendance.dept || row.department === this.filters.attendance.dept;
-            const matchesStatus = !this.filters.attendance.status ||
-                (this.filters.attendance.status === 'present' && row.present > 0) ||
-                (this.filters.attendance.status === 'absent' && row.absent > 0) ||
-                (this.filters.attendance.status === 'late' && row.late > 0);
-            return matchesDept && matchesStatus;
+    const monthFilter = this.filters.attendance.month;
+    const deptFilter = this.filters.attendance.dept;
+    const statusFilter = this.filters.attendance.status;
+
+    return this.attendanceData.map(row => {
+        const employee = this.rawEmployees.find(
+            emp => String(emp.id) === String(row.userId)
+        );
+
+        if (!employee) return null;
+
+        // Ambil seluruh absensi pegawai ini
+        let empAttendance = this.rawAttendance.filter(
+            a => String(a.userId) === String(employee.id)
+        );
+
+        // Filter bulan
+        if (monthFilter) {
+            empAttendance = empAttendance.filter(a => {
+                if (!a.date) return false;
+
+                const date = new Date(a.date);
+
+                if (isNaN(date.getTime())) return false;
+
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+
+                return `${year}-${month}` === monthFilter;
+            });
+        }
+
+        // Hitung hadir
+        const present = empAttendance.filter(
+            a => a.clockIn
+        ).length;
+
+        // Hitung terlambat
+        const late = empAttendance.filter(
+            a =>
+                a.clockIn &&
+                a.status &&
+                String(a.status).toLowerCase() === 'terlambat'
+        ).length;
+
+        // Hitung ketidakhadiran dari cuti & izin
+        let absent = 0;
+
+        // Cuti yang approved
+        const empLeaves = this.rawLeaves.filter(
+            l =>
+                String(l.userId) === String(employee.id) &&
+                l.status === 'approved'
+        );
+
+        empLeaves.forEach(leave => {
+            if (!monthFilter) {
+                absent += parseInt(leave.duration) || 1;
+                return;
+            }
+
+            if (!leave.startDate || !leave.endDate) return;
+
+            const start = new Date(leave.startDate);
+            const end = new Date(leave.endDate);
+
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
+
+            const filterStart = new Date(`${monthFilter}-01`);
+            const filterEnd = new Date(
+                filterStart.getFullYear(),
+                filterStart.getMonth() + 1,
+                0
+            );
+
+            const overlapStart = start > filterStart ? start : filterStart;
+            const overlapEnd = end < filterEnd ? end : filterEnd;
+
+            if (overlapStart <= overlapEnd) {
+                const days =
+                    Math.floor(
+                        (overlapEnd - overlapStart) /
+                        (1000 * 60 * 60 * 24)
+                    ) + 1;
+
+                absent += days;
+            }
         });
-    },
+
+        // Izin yang approved
+        const empIzin = this.rawIzin.filter(
+            i =>
+                String(i.userId) === String(employee.id) &&
+                i.status === 'approved'
+        );
+
+        empIzin.forEach(izin => {
+            if (!izin.date) return;
+
+            if (!monthFilter) {
+                absent += parseInt(izin.duration) || 1;
+                return;
+            }
+
+            const date = new Date(izin.date);
+
+            if (isNaN(date.getTime())) return;
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+
+            if (`${year}-${month}` === monthFilter) {
+                absent += parseInt(izin.duration) || 1;
+            }
+        });
+
+        const total = present + absent;
+
+        return {
+            userId: emp.id,
+            name: employee.name,
+            department: employee.department,
+            present: present,
+            late: late,
+            absent: absent,
+            total: total
+        };
+    })
+    .filter(row => {
+        if (!row) return false;
+
+        const matchesDept =
+            !deptFilter ||
+            row.department === deptFilter;
+
+        const matchesStatus =
+            !statusFilter ||
+            (statusFilter === 'present' && row.present > 0) ||
+            (statusFilter === 'absent' && row.absent > 0) ||
+            (statusFilter === 'late' && row.late > 0);
+
+        return matchesDept && matchesStatus;
+    });
+},
 
     getFilteredJurnal() {
         return this.jurnalData.filter(row => {

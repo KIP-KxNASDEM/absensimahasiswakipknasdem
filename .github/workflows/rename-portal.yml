@@ -1,0 +1,37 @@
+name: Rename Portal Branding
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rename Portal Karyawan
+        shell: bash
+        run: |
+          files=$(git grep -Il 'Portal Karyawan' -- ':!.github/workflows/rename-portal.yml' || true)
+          if [ -n "$files" ]; then
+            while IFS= read -r file; do
+              sed -i 's/Portal Karyawan/Portal Mahasiswa/g' "$file"
+              git add "$file"
+            done <<< "$files"
+          fi
+
+          if git diff --cached --quiet; then
+            echo "Tidak ada perubahan."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Rename portal to Portal Mahasiswa"
+          git push

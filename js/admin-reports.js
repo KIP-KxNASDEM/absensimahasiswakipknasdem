@@ -320,8 +320,10 @@ const adminReports = {
 
     return this.attendanceData.map(row => {
 
+        const normalize = value => String(value ?? '').trim();
+
         const employee = this.rawEmployees.find(
-            emp => String(emp.id) === String(row.userId)
+            emp => normalize(emp.id) === normalize(row.userId)
         );
 
         if (!employee) return null;
@@ -329,9 +331,12 @@ const adminReports = {
         // ============================================
         // DATA ABSENSI PEGAWAI
         // ============================================
-        let empAttendance = this.rawAttendance.filter(
-            a => String(a.userId) === String(employee.id)
-        );
+        let empAttendance = this.rawAttendance.filter(a => {
+            const attendanceUserId = normalize(
+                a.userId ?? a.userID ?? a.userid ?? a.employeeId ?? a.employeeID ?? a['User ID']
+            );
+            return attendanceUserId === normalize(employee.id);
+        });
 
         // ============================================
         // FILTER BULAN
@@ -354,19 +359,19 @@ const adminReports = {
         // ============================================
         // HITUNG HADIR
         // ============================================
-        const present = empAttendance.filter(
-            a => a.clockIn
-        ).length;
+        const present = empAttendance.filter(a => {
+            const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];
+            return !!clockIn;
+        }).length;
 
         // ============================================
         // HITUNG TERLAMBAT
         // ============================================
-        const late = empAttendance.filter(
-            a =>
-                a.clockIn &&
-                a.status &&
-                String(a.status).toLowerCase() === 'terlambat'
-        ).length;
+        const late = empAttendance.filter(a => {
+            const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];
+            const status = normalize(a.status ?? a.Status).toLowerCase();
+            return !!clockIn && (status === 'terlambat' || status === 'late');
+        }).length;
 
         // ============================================
         // HITUNG CUTI / IZIN APPROVED

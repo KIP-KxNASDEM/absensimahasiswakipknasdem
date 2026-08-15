@@ -1,0 +1,35 @@
+name: Fix attendance report
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-attendance-report.yml'
+      - 'js/admin-reports.js'
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[attendance-report-fixed]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch attendance matching
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('js/admin-reports.js')
+          s = p.read_text()
+          old = """            const empAtt = attendances.filter(a => String(a.userId) === String(emp.id));\n            let present = 0;\n            let late = 0;\n\n            empAtt.forEach(a => {\n                if (a.clockIn) {\n                    present++;\n                    if (a.status && a.status.toLowerCase() === 'terlambat') {\n                        late++;\n                    }\n                }\n            });"""
+          new = """            const normalize = value => String(value ?? '').trim();\n            const empId = normalize(emp.id);\n\n            const empAtt = attendances.filter(a => {\n                const attendanceUserId = normalize(\n                    a.userId ?? a.userID ?? a.userid ?? a.employeeId ?? a.employeeID ?? a['User ID']\n                );\n                return attendanceUserId === empId;\n            });\n\n            let present = 0;\n            let late = 0;\n\n            empAtt.forEach(a => {\n                const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];\n                const status = normalize(a.status ?? a.Status);\n\n                if (clockIn) {\n                    present++;\n                    if (status.toLowerCase() === 'terlambat' || status.toLowerCase() === 'late') {\n                        late++;\n                    }\n                }\n            });"""
+          if old not in s:
+              raise SystemExit('Target attendance block not found; no change made.')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/admin-reports.js
+          git diff --cached --quiet || git commit -m "Fix attendance report matching [attendance-report-fixed]"
+          git push

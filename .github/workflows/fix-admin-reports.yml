@@ -1,0 +1,43 @@
+name: Fix admin attendance report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'js/admin-reports.js'
+      - '.github/workflows/fix-admin-reports.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch attendance report matching
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('js/admin-reports.js')
+          s = p.read_text()
+          replacements = [
+          ('''        const employee = this.rawEmployees.find(\n            emp => String(emp.id) === String(row.userId)\n        );\n''', '''        const normalize = value => String(value ?? '').trim();\n\n        const employee = this.rawEmployees.find(\n            emp => normalize(emp.id) === normalize(row.userId)\n        );\n'''),
+          ('''        let empAttendance = this.rawAttendance.filter(\n            a => String(a.userId) === String(employee.id)\n        );\n''', '''        let empAttendance = this.rawAttendance.filter(a => {\n            const attendanceUserId = normalize(\n                a.userId ?? a.userID ?? a.userid ?? a.employeeId ?? a.employeeID ?? a['User ID']\n            );\n            return attendanceUserId === normalize(employee.id);\n        });\n'''),
+          ('''        const present = empAttendance.filter(\n            a => a.clockIn\n        ).length;\n''', '''        const present = empAttendance.filter(a => {\n            const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];\n            return !!clockIn;\n        }).length;\n'''),
+          ('''        const late = empAttendance.filter(\n            a =>\n                a.clockIn &&\n                a.status &&\n                String(a.status).toLowerCase() === 'terlambat'\n        ).length;\n''', '''        const late = empAttendance.filter(a => {\n            const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];\n            const status = normalize(a.status ?? a.Status).toLowerCase();\n            return !!clockIn && (status === 'terlambat' || status === 'late');\n        }).length;\n''')]
+          for old,new in replacements:
+              if old not in s:
+                  continue
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/admin-reports.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fix admin attendance report data matching [skip ci]'
+          git push

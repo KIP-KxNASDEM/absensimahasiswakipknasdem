@@ -304,18 +304,23 @@ const adminReports = {
     const statusFilter = this.filters.attendance.status;
 
     return this.attendanceData.map(row => {
+
         const employee = this.rawEmployees.find(
             emp => String(emp.id) === String(row.userId)
         );
 
         if (!employee) return null;
 
-        // Ambil seluruh absensi pegawai ini
+        // ==========================================
+        // AMBIL SELURUH ABSENSI PEGAWAI
+        // ==========================================
         let empAttendance = this.rawAttendance.filter(
             a => String(a.userId) === String(employee.id)
         );
 
-        // Filter bulan
+        // ==========================================
+        // FILTER BULAN
+        // ==========================================
         if (monthFilter) {
             empAttendance = empAttendance.filter(a => {
                 if (!a.date) return false;
@@ -331,12 +336,16 @@ const adminReports = {
             });
         }
 
-        // Hitung hadir
+        // ==========================================
+        // HITUNG HADIR
+        // ==========================================
         const present = empAttendance.filter(
             a => a.clockIn
         ).length;
 
-        // Hitung terlambat
+        // ==========================================
+        // HITUNG TERLAMBAT
+        // ==========================================
         const late = empAttendance.filter(
             a =>
                 a.clockIn &&
@@ -344,21 +353,19 @@ const adminReports = {
                 String(a.status).toLowerCase() === 'terlambat'
         ).length;
 
-        // Hitung ketidakhadiran dari cuti & izin
-        let absent = 0;
+        // ==========================================
+        // HITUNG CUTI / IZIN
+        // ==========================================
+        let leaveDays = 0;
 
-        // Cuti yang approved
+        // ---------- CUTI ----------
         const empLeaves = this.rawLeaves.filter(
             l =>
                 String(l.userId) === String(employee.id) &&
-                l.status === 'approved'
+                String(l.status).toLowerCase() === 'approved'
         );
 
         empLeaves.forEach(leave => {
-            if (!monthFilter) {
-                absent += parseInt(leave.duration) || 1;
-                return;
-            }
 
             if (!leave.startDate || !leave.endDate) return;
 
@@ -367,39 +374,57 @@ const adminReports = {
 
             if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
 
+            // Kalau tidak ada filter bulan
+            if (!monthFilter) {
+                leaveDays += Math.floor(
+                    (end - start) / (1000 * 60 * 60 * 24)
+                ) + 1;
+
+                return;
+            }
+
+            // Batas awal bulan
             const filterStart = new Date(`${monthFilter}-01`);
+
+            // Batas akhir bulan
             const filterEnd = new Date(
                 filterStart.getFullYear(),
                 filterStart.getMonth() + 1,
                 0
             );
 
-            const overlapStart = start > filterStart ? start : filterStart;
-            const overlapEnd = end < filterEnd ? end : filterEnd;
+            // Cari irisan tanggal cuti dengan bulan terpilih
+            const overlapStart = start > filterStart
+                ? start
+                : filterStart;
+
+            const overlapEnd = end < filterEnd
+                ? end
+                : filterEnd;
 
             if (overlapStart <= overlapEnd) {
-                const days =
-                    Math.floor(
-                        (overlapEnd - overlapStart) /
-                        (1000 * 60 * 60 * 24)
-                    ) + 1;
+                const days = Math.floor(
+                    (overlapEnd - overlapStart) /
+                    (1000 * 60 * 60 * 24)
+                ) + 1;
 
-                absent += days;
+                leaveDays += days;
             }
         });
 
-        // Izin yang approved
+        // ---------- IZIN ----------
         const empIzin = this.rawIzin.filter(
             i =>
                 String(i.userId) === String(employee.id) &&
-                i.status === 'approved'
+                String(i.status).toLowerCase() === 'approved'
         );
 
         empIzin.forEach(izin => {
+
             if (!izin.date) return;
 
             if (!monthFilter) {
-                absent += parseInt(izin.duration) || 1;
+                leaveDays += parseInt(izin.duration) || 1;
                 return;
             }
 
@@ -411,33 +436,51 @@ const adminReports = {
             const month = String(date.getMonth() + 1).padStart(2, '0');
 
             if (`${year}-${month}` === monthFilter) {
-                absent += parseInt(izin.duration) || 1;
+                leaveDays += parseInt(izin.duration) || 1;
             }
         });
 
-        const total = present + absent;
+        // ==========================================
+        // TOTAL
+        // ==========================================
+        const total = present + leaveDays;
 
         return {
-            userId: emp.id,
+            userId: employee.id,
             name: employee.name,
             department: employee.department,
+
             present: present,
             late: late,
-            absent: absent,
+
+            // Untuk sementara tetap mengikuti struktur
+            // tampilan yang sekarang:
+            absent: leaveDays,
+
             total: total
         };
-    })
-    .filter(row => {
+
+    }).filter(row => {
+
         if (!row) return false;
 
+        // ==========================================
+        // FILTER DEPARTEMEN
+        // ==========================================
         const matchesDept =
             !deptFilter ||
             row.department === deptFilter;
 
+        // ==========================================
+        // FILTER STATUS
+        // ==========================================
         const matchesStatus =
             !statusFilter ||
+
             (statusFilter === 'present' && row.present > 0) ||
+
             (statusFilter === 'absent' && row.absent > 0) ||
+
             (statusFilter === 'late' && row.late > 0);
 
         return matchesDept && matchesStatus;

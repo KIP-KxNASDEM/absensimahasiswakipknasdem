@@ -1,0 +1,1 @@
+Deployment trigger for the attendance report fix. The live Vercel site was serving an older commit than main.

@@ -15,13 +15,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Rename Portal Karyawan
+      - name: Normalize student-facing terminology
         shell: bash
         run: |
-          files=$(git grep -Il 'Portal Karyawan' -- ':!.github/workflows/rename-portal.yml' || true)
+          files=$(git grep -Il -e 'Portal Karyawan' -e 'Data Karyawan' -e 'Email / ID Karyawan' -e 'Karyawan' -e 'karyawan' -- ':!.github/workflows/rename-portal.yml' || true)
           if [ -n "$files" ]; then
             while IFS= read -r file; do
-              sed -i 's/Portal Karyawan/Portal Mahasiswa/g' "$file"
+              sed -i \
+                -e 's/Portal Karyawan/Portal Mahasiswa/g' \
+                -e 's/Data Karyawan/Data Mahasiswa/g' \
+                -e 's/Email \/ ID Karyawan/Email \/ ID Mahasiswa/g' \
+                -e 's/Karyawan/Mahasiswa/g' \
+                -e 's/karyawan/mahasiswa/g' \
+                "$file"
               git add "$file"
             done <<< "$files"
           fi
@@ -33,5 +39,5 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Rename portal to Portal Mahasiswa"
+          git commit -m "fix: finish student-facing terminology"
           git push

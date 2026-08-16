@@ -237,4 +237,78 @@
             return row;
         }).filter(Boolean);
     };
+
+    // Real attendance detail for the eye button.
+    adminReports.viewDetail = function (name) {
+        const monthInput = document.getElementById('attendance-month');
+        const month = this.filters?.attendance?.month || monthInput?.value || '';
+        const student = arr(this.rawEmployees).find(s => nameOf(s) === norm(name));
+
+        if (!student) {
+            toast.error('Data mahasiswa tidak ditemukan');
+            return;
+        }
+
+        const records = arr(this.rawAttendance)
+            .filter(record => samePerson(student, record) && (!month || monthOf(dateValue(record)) === month))
+            .sort((a, b) => String(dateValue(b)).localeCompare(String(dateValue(a))));
+
+        const summary = this.getFilteredAttendance().find(row => samePerson(student, row)) || {
+            present: 0,
+            late: 0,
+            absent: month ? workdaysElapsed(month) : 0,
+            total: month ? workdaysElapsed(month) : 0
+        };
+
+        const statusLabel = record => {
+            if (!clockIn(record)) return 'Absen';
+            return isLate(record) ? 'Terlambat' : 'Hadir';
+        };
+
+        const statusClass = record => {
+            const status = statusLabel(record);
+            return status === 'Hadir' ? 'success' : status === 'Terlambat' ? 'warning' : 'danger';
+        };
+
+        const rows = records.length ? records.map(record => `
+            <tr>
+                <td>${dateValue(record) || '-'}</td>
+                <td>${val(record, ['shift', 'Shift', 'shiftName']) || 'Pagi'}</td>
+                <td>${clockIn(record) || '-'}</td>
+                <td>${val(record, ['clockOut', 'clockout', 'clock_out', 'Clock Out', 'Jam Pulang']) || '-'}</td>
+                <td><span class="status-badge ${statusClass(record)}">${statusLabel(record)}</span></td>
+            </tr>
+        `).join('') : `
+            <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Belum ada data absensi pada periode ini.</td></tr>
+        `;
+
+        const content = `
+            <div class="attendance-detail-content">
+                <div class="detail-row"><label>Nama:</label><p>${student.name || student.nama || '-'}</p></div>
+                <div class="detail-row"><label>Departemen:</label><p>${student.department || student.fakultas || student.prodi || '-'}</p></div>
+                <div class="detail-row"><label>Periode:</label><p>${month || 'Semua periode'}</p></div>
+
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0;">
+                    <div class="detail-stat"><strong style="color:var(--color-success)">${summary.present}</strong><span>Hadir</span></div>
+                    <div class="detail-stat"><strong style="color:var(--color-warning)">${summary.late}</strong><span>Terlambat</span></div>
+                    <div class="detail-stat"><strong style="color:var(--color-danger)">${summary.absent}</strong><span>Absen</span></div>
+                    <div class="detail-stat"><strong>${summary.total}</strong><span>Total</span></div>
+                </div>
+
+                <div class="detail-section">
+                    <label>Riwayat Absensi</label>
+                    <div style="overflow-x:auto;margin-top:10px;">
+                        <table class="data-table" style="width:100%;">
+                            <thead><tr><th>Tanggal</th><th>Shift</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modal.show(`Detail Absensi - ${student.name || student.nama || '-'}`, content, [
+            { label: 'Tutup', class: 'btn-secondary', onClick: () => modal.close() }
+        ]);
+    };
 })();

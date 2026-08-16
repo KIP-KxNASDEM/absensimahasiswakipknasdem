@@ -1,0 +1,37 @@
+name: Remove Admin Shift Menu
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/remove-admin-shift.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove Jadwal Shift from admin navigation
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          start = s.find('<li class="nav-item" data-page="shift-schedule">')
+          if start >= 0:
+              end = s.find('</li>', start)
+              if end >= 0:
+                  s = s[:start] + s[end + len('</li>'):]
+          p.write_text(s)
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'remove admin shift schedule menu [skip ci]'
+          git push

@@ -1,11 +1,11 @@
-/* Attendance report matching fix. Loaded after admin-reports.js. */
+/* Attendance report fix for Portal Mahasiswa.
+ * Loaded after admin-reports.js.
+ *
+ * Important: the admin report must read the same student/attendance source
+ * used by the student portal. It must not depend on shift_schedule_*.
+ */
 (() => {
     const norm = value => String(value ?? '').trim().toLowerCase();
-
-    const values = (obj, keys) => keys
-        .map(key => obj?.[key])
-        .map(norm)
-        .filter(Boolean);
 
     const firstArray = value => {
         if (Array.isArray(value)) return value;
@@ -17,36 +17,64 @@
         return [];
     };
 
-    const EMP_KEYS = [
-        'id','userId','userID','userid','employeeId','employeeID',
-        'studentId','studentID','nim','NIM','email','Email','name','nama'
-    ];
-
-    const ATT_KEYS = [
-        'userId','userID','userid','employeeId','employeeID',
-        'studentId','studentID','nim','NIM','email','Email',
-        'User ID','Student ID','NIM','name','nama'
-    ];
-
-    const findEmployee = (attendance, employees) => {
-        const aKeys = new Set(values(attendance, ATT_KEYS));
-        if (!aKeys.size) return null;
-        return employees.find(emp => values(emp, EMP_KEYS).some(key => aKeys.has(key))) || null;
+    const pick = (obj, keys) => {
+        for (const key of keys) {
+            const value = obj?.[key];
+            if (value !== undefined && value !== null && String(value).trim() !== '') {
+                return value;
+            }
+        }
+        return '';
     };
 
-    const getClockIn = a => a?.clockIn ?? a?.clockin ?? a?.['Clock In'] ?? a?.['Jam Masuk'] ?? a?.jamMasuk;
-    const getStatus = a => norm(a?.status ?? a?.Status ?? a?.['Status Kehadiran']);
-    const getDate = a => a?.date ?? a?.tanggal ?? a?.Date ?? a?.Tanggal;
+    const ID_KEYS = [
+        'id', 'userId', 'userID', 'userid', 'studentId', 'studentID',
+        'employeeId', 'employeeID', 'nim', 'NIM', 'email', 'Email',
+        'User ID', 'Student ID', 'Nama', 'name', 'nama'
+    ];
+
+    const ATT_ID_KEYS = [
+        'userId', 'userID', 'userid', 'studentId', 'studentID',
+        'employeeId', 'employeeID', 'nim', 'NIM', 'email', 'Email',
+        'User ID', 'Student ID', 'Nama', 'name', 'nama'
+    ];
+
+    const identitySet = obj => new Set(
+        ID_KEYS
+            .map(key => norm(obj?.[key]))
+            .filter(Boolean)
+    );
+
+    const samePerson = (a, b) => {
+        const left = identitySet(a);
+        const right = new Set(ATT_ID_KEYS.map(key => norm(b?.[key])).filter(Boolean));
+        for (const value of left) {
+            if (right.has(value)) return true;
+        }
+        return false;
+    };
+
+    const getClockIn = a => pick(a, [
+        'clockIn', 'clockin', 'clock_in', 'Clock In', 'Jam Masuk', 'jamMasuk', 'jam_masuk'
+    ]);
+
+    const getStatus = a => norm(pick(a, [
+        'status', 'Status', 'Status Kehadiran', 'statusKehadiran'
+    ]));
+
+    const getDate = a => pick(a, [
+        'date', 'tanggal', 'Date', 'Tanggal', 'attendanceDate', 'attendance_date'
+    ]);
 
     const monthOf = value => {
         if (!value) return '';
         if (typeof value === 'string') {
-            const m = value.match(/(\d{4})-(\d{2})/);
-            if (m) return `${m[1]}-${m[2]}`;
+            const match = value.match(/(\d{4})[-\/]([0-9]{1,2})/);
+            if (match) return `${match[1]}-${String(match[2]).padStart(2, '0')}`;
         }
-        const d = new Date(value);
-        if (Number.isNaN(d.getTime())) return '';
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     };
 
     const workdaysInMonth = monthFilter => {
@@ -56,98 +84,182 @@
         const days = new Date(year, month, 0).getDate();
         let count = 0;
         for (let day = 1; day <= days; day++) {
-            const date = new Date(year, month - 1, day);
-            const weekday = date.getDay();
+            const weekday = new Date(year, month - 1, day).getDay();
             if (weekday !== 0 && weekday !== 6) count++;
         }
         return count;
+    };
+
+    const approvedDaysFor = (records, student, monthFilter, type) => {
+        let total = 0;
+        for (const record of firstArray(records)) {
+            if (!samePerson(student, record)) continue;
+            if (norm(record.status) !== 'approved') continue;
+
+            if (type === 'izin') {
+                if (monthFilter && monthOf(pick(record, ['date', 'tanggal', 'Date', 'Tanggal'])) !== monthFilter) continue;
+                const duration = parseInt(record.duration, 10);
+                total += Number.isFinite(duration) && duration > 0 ? duration : 1;
+                continue;
+            }
+
+            const start = new Date(record.startDate || record.start_date || record.tanggalMulai);
+            const end = new Date(record.endDate || record.end_date || record.tanggalSelesai || record.startDate);
+            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
+
+            if (!monthFilter) {
+                total += Math.max(1, Math.floor((end - start) / 86400000) + 1);
+                continue;
+            }
+
+            const [year, month] = monthFilter.split('-').map(Number);
+            const monthStart = new Date(year, month - 1, 1);
+            const monthEnd = new Date(year, month, 0, 23, 59, 59);
+            const overlapStart = start > monthStart ? start : monthStart;
+            const overlapEnd = end < monthEnd ? end : monthEnd;
+            if (overlapStart <= overlapEnd) {
+                total += Math.floor((overlapEnd - overlapStart) / 86400000) + 1;
+            }
+        }
+        return total;
+    };
+
+    /*
+     * Replace the old report loader.
+     * getAllAttendance() has proven unreliable for this admin report, while
+     * getAttendance(studentId) is the endpoint already used by the student portal.
+     * Fetch each student's attendance from that same endpoint.
+     */
+    const originalLoadData = adminReports.loadData.bind(adminReports);
+
+    adminReports.loadData = async function () {
+        let students = [];
+        let jurnals = [];
+        let leaves = [];
+        let izinList = [];
+        let settings = {};
+
+        try {
+            const [studentResult, journalResult, leaveResult, izinResult, settingsResult] = await Promise.all([
+                api.getStudents(),
+                api.getAllJournals(),
+                api.getAllLeaves(),
+                api.getAllIzin(),
+                api.getSettings()
+            ]);
+
+            students = firstArray(studentResult?.data ?? studentResult);
+            jurnals = firstArray(journalResult?.data ?? journalResult);
+            leaves = firstArray(leaveResult?.data ?? leaveResult);
+            izinList = firstArray(izinResult?.data ?? izinResult);
+            settings = firstArray(settingsResult?.data ?? settingsResult).length
+                ? firstArray(settingsResult?.data ?? settingsResult)[0]
+                : (settingsResult?.data || {});
+        } catch (error) {
+            console.error('Student report base data error:', error);
+            students = firstArray(storage.get('admin_students', []));
+            jurnals = firstArray(storage.get('jurnals', []));
+            leaves = firstArray(storage.get('leaves', []));
+            izinList = firstArray(storage.get('izin', []));
+            settings = storage.get('settings', {});
+        }
+
+        // Same attendance endpoint as the student dashboard.
+        const attendanceResults = await Promise.allSettled(
+            students.map(student => api.getAttendance(student.id))
+        );
+
+        const attendance = [];
+        attendanceResults.forEach((result, index) => {
+            if (result.status !== 'fulfilled') return;
+            const rows = firstArray(result.value?.data ?? result.value);
+            const student = students[index];
+            rows.forEach(row => {
+                // Some backends return all attendance even when userId is supplied.
+                // Do not duplicate another student's record in that case.
+                if (!row || samePerson(student, row)) attendance.push(row);
+            });
+        });
+
+        this.rawEmployees = students;
+        this.rawAttendance = attendance;
+        this.rawLeaves = leaves;
+        this.rawIzin = izinList;
+        this.settings = settings || {};
+
+        this.attendanceData = students.map(student => ({
+            userId: student.id,
+            name: student.name || student.nama || student.email || student.nim || '-',
+            department: student.department || student.fakultas || student.prodi || '-',
+            present: 0,
+            late: 0,
+            absent: 0,
+            total: 0
+        }));
+
+        const currentUser = auth.getCurrentUser();
+        this.jurnalData = jurnals.map(j => {
+            const emp = students.find(s => samePerson(s, j)) ||
+                (currentUser ? { name: currentUser.name, department: currentUser.department || '-' } : null) ||
+                { name: 'Mahasiswa', department: '-' };
+            return {
+                date: j.date,
+                name: emp.name,
+                department: emp.department,
+                tasks: j.tasks || '-',
+                achievements: j.achievements || '-',
+                obstacles: j.obstacles || '-',
+                plan: j.plan || '-',
+                photo: j.photo || null,
+                status: j.tasks ? 'filled' : 'empty',
+                updatedAt: j.updatedAt
+            };
+        });
+
+        this.leaveData = [];
     };
 
     adminReports.getFilteredAttendance = function () {
         const monthFilter = this.filters?.attendance?.month || '';
         const deptFilter = this.filters?.attendance?.dept || '';
         const statusFilter = this.filters?.attendance?.status || '';
-
-        const employees = firstArray(this.rawEmployees);
+        const students = firstArray(this.rawEmployees);
         const attendances = firstArray(this.rawAttendance);
-        const leaves = firstArray(this.rawLeaves);
-        const izin = firstArray(this.rawIzin);
 
-        return employees.map(employee => {
-            const empAttendance = attendances.filter(a => {
-                const matched = findEmployee(a, [employee]);
-                if (!matched) return false;
-                if (!monthFilter) return true;
-                return monthOf(getDate(a)) === monthFilter;
+        return students.map(student => {
+            const studentAttendance = attendances.filter(row => {
+                if (!samePerson(student, row)) return false;
+                return !monthFilter || monthOf(getDate(row)) === monthFilter;
             });
 
-            const present = empAttendance.filter(a => !!getClockIn(a)).length;
-            const late = empAttendance.filter(a => {
-                const status = getStatus(a);
-                return !!getClockIn(a) && (status === 'terlambat' || status === 'late');
+            const present = studentAttendance.filter(row => !!getClockIn(row)).length;
+            const late = studentAttendance.filter(row => {
+                const status = getStatus(row);
+                return !!getClockIn(row) && (status === 'terlambat' || status === 'late');
             }).length;
 
-            const empKeys = new Set(values(employee, EMP_KEYS));
-            let leaveDays = 0;
-
-            leaves.forEach(l => {
-                const lKeys = new Set(values(l, EMP_KEYS));
-                if (![...empKeys].some(k => lKeys.has(k))) return;
-                if (norm(l.status) !== 'approved') return;
-
-                const start = new Date(l.startDate);
-                const end = new Date(l.endDate || l.startDate);
-                if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
-
-                if (!monthFilter) {
-                    leaveDays += Math.max(1, Math.floor((end - start) / 86400000) + 1);
-                    return;
-                }
-
-                const monthStart = new Date(`${monthFilter}-01T00:00:00`);
-                const [y, m] = monthFilter.split('-').map(Number);
-                const monthEnd = new Date(y, m, 0, 23, 59, 59);
-                const overlapStart = start > monthStart ? start : monthStart;
-                const overlapEnd = end < monthEnd ? end : monthEnd;
-                if (overlapStart <= overlapEnd) {
-                    leaveDays += Math.floor((overlapEnd - overlapStart) / 86400000) + 1;
-                }
-            });
-
-            izin.forEach(i => {
-                const iKeys = new Set(values(i, EMP_KEYS));
-                if (![...empKeys].some(k => iKeys.has(k))) return;
-                if (norm(i.status) !== 'approved') return;
-                if (monthFilter && monthOf(i.date ?? i.tanggal ?? i.Date ?? i.Tanggal) !== monthFilter) return;
-                const duration = parseInt(i.duration, 10);
-                leaveDays += Number.isFinite(duration) && duration > 0 ? duration : 1;
-            });
-
-            // Jadwal Shift sudah dihapus dari menu admin, sehingga laporan
-            // tidak boleh bergantung pada shift_schedule_* untuk menentukan total.
-            // Gunakan hari kerja Senin-Jumat sebagai baseline.
-            const baselineWorkDays = monthFilter ? workdaysInMonth(monthFilter) : 0;
+            const leaveDays = approvedDaysFor(this.rawLeaves, student, monthFilter, 'leave');
+            const izinDays = approvedDaysFor(this.rawIzin, student, monthFilter, 'izin');
+            const baseline = monthFilter ? workdaysInMonth(monthFilter) : present + leaveDays + izinDays;
             const absent = monthFilter
-                ? Math.max(0, baselineWorkDays - present - leaveDays)
+                ? Math.max(0, baseline - present - leaveDays - izinDays)
                 : 0;
-            const total = present + absent;
 
-            return {
-                userId: employee.id,
-                name: employee.name,
-                department: employee.department,
+            const row = {
+                userId: student.id,
+                name: student.name || student.nama || student.email || student.nim || '-',
+                department: student.department || student.fakultas || student.prodi || '-',
                 present,
                 late,
                 absent,
-                total
+                total: present + absent
             };
-        }).filter(row => {
-            if (deptFilter && row.department !== deptFilter) return false;
-            if (!statusFilter) return true;
-            if (statusFilter === 'present') return row.present > 0;
-            if (statusFilter === 'absent') return row.absent > 0;
-            if (statusFilter === 'late') return row.late > 0;
-            return true;
-        });
+
+            if (deptFilter && row.department !== deptFilter) return null;
+            if (statusFilter === 'present' && row.present <= 0) return null;
+            if (statusFilter === 'absent' && row.absent <= 0) return null;
+            if (statusFilter === 'late' && row.late <= 0) return null;
+            return row;
+        }).filter(Boolean);
     };
 })();

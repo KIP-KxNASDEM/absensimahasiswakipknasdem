@@ -1,4 +1,4 @@
-/* Attendance report fix - uses the canonical getAllAttendance endpoint. */
+/* Attendance report fix - canonical student + attendance report. */
 (() => {
     const norm = v => String(v ?? '').trim().toLowerCase();
 
@@ -64,6 +64,11 @@
         'status', 'Status', 'Status Kehadiran', 'statusKehadiran'
     ]));
 
+    const isLate = r => {
+        const status = attendanceStatus(r);
+        return status === 'terlambat' || status === 'late';
+    };
+
     const monthOf = value => {
         if (!value) return '';
         const text = String(value);
@@ -75,6 +80,8 @@
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     };
 
+    // Count weekdays up to today for the current month, or all weekdays for past months.
+    // This keeps the report independent from the removed admin shift-schedule menu.
     const workdaysElapsed = month => {
         if (!month) return 0;
         const [year, monthNumber] = month.split('-').map(Number);
@@ -82,7 +89,6 @@
 
         const now = new Date();
         const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
         if (month > currentMonth) return 0;
 
         const lastDay = month < currentMonth
@@ -135,8 +141,6 @@
         return total;
     };
 
-    // Override ONLY the attendance report initializer.
-    // Journal and leave reports continue using their original loadData().
     adminReports.initAttendanceReports = async function () {
         if (!auth.isAdmin()) {
             toast.error('Anda tidak memiliki akses!');
@@ -191,19 +195,29 @@
                 (!month || monthOf(dateValue(record)) === month)
             );
 
-            const present = records.filter(record => !!clockIn(record)).length;
+            // HADIR = masuk tepat waktu.
+            // TERLAMBAT = kategori terpisah, agar satu hari tidak dihitung dua kali.
+            const late = records.filter(record =>
+                !!clockIn(record) && isLate(record)
+            ).length;
 
-            const late = records.filter(record => {
-                const status = attendanceStatus(record);
-                return !!clockIn(record) && (status === 'terlambat' || status === 'late');
-            }).length;
+            const present = records.filter(record =>
+                !!clockIn(record) && !isLate(record)
+            ).length;
 
             const leaveDays = approvedLeaveDays(this.rawLeaves, student, month, false);
             const izinDays = approvedLeaveDays(this.rawIzin, student, month, true);
 
+            // ABSEN hanya hari kerja yang tidak hadir dan bukan cuti/izin.
             const absent = month
-                ? Math.max(0, elapsedWorkdays - present - leaveDays - izinDays)
+                ? Math.max(0, elapsedWorkdays - present - late - leaveDays - izinDays)
                 : 0;
+
+            // Total = seluruh hari kerja efektif yang menjadi kewajiban kehadiran.
+            // Cuti/izin tidak dimasukkan sebagai absen, sehingga total tetap konsisten.
+            const total = month
+                ? Math.max(0, elapsedWorkdays - leaveDays - izinDays)
+                : present + late;
 
             const row = {
                 userId: student.id,
@@ -212,7 +226,7 @@
                 present,
                 late,
                 absent,
-                total: present + absent
+                total
             };
 
             if (department && row.department !== department) return null;

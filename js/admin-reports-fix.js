@@ -72,25 +72,44 @@
     adminReports.loadData = async function() {
         let students=[], journals=[], leaves=[], izin=[], settings={};
         try {
-            const [sr,jr,lr,ir,setr,ar] = await Promise.all([
-                api.getStudents(), api.getAllJournals(), api.getAllLeaves(), api.getAllIzin(), api.getSettings(), api.getAllAttendance()
+            const [sr,jr,lr,ir,setr] = await Promise.all([
+                api.getStudents(), api.getAllJournals(), api.getAllLeaves(), api.getAllIzin(), api.getSettings()
             ]);
             students = arr(sr?.data ?? sr);
             journals = arr(jr?.data ?? jr);
             leaves = arr(lr?.data ?? lr);
             izin = arr(ir?.data ?? ir);
             settings = setr?.data || {};
-            this.rawAttendance = arr(ar?.data ?? ar);
         } catch (e) {
-            console.error('Attendance report load error:',e);
+            console.error('Attendance report base data load error:',e);
             students = arr(storage.get('admin_students',[]));
             journals = arr(storage.get('jurnals',[]));
             leaves = arr(storage.get('leaves',[]));
             izin = arr(storage.get('izin',[]));
             settings = storage.get('settings',{});
-            this.rawAttendance = arr(storage.get('attendance',[]));
         }
-        this.rawEmployees=students; this.rawLeaves=leaves; this.rawIzin=izin; this.settings=settings||{};
+
+        // IMPORTANT: attendance is sourced per student, exactly like the student portal.
+        // Do not use api.getAllAttendance() here because its global response does not
+        // reliably contain every student's record (notably Ahmad Rizky).
+        const attendanceResults = await Promise.allSettled(
+            students.map(student => api.getAttendance(student.id))
+        );
+        const attendance = [];
+        attendanceResults.forEach((result, index) => {
+            if (result.status !== 'fulfilled') return;
+            const rows = arr(result.value?.data ?? result.value);
+            const student = students[index];
+            rows.forEach(row => {
+                if (!row || same(student,row)) attendance.push(row);
+            });
+        });
+
+        this.rawEmployees=students;
+        this.rawAttendance=attendance;
+        this.rawLeaves=leaves;
+        this.rawIzin=izin;
+        this.settings=settings||{};
         this.attendanceData=[];
         this.jurnalData=journals.map(j=>{
             const s=students.find(x=>same(x,j)) || {name:'Mahasiswa',department:'-'};

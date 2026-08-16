@@ -1,0 +1,225 @@
+name: Fix Rekap Absensi Data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-rekap-data.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch admin attendance report loader
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('js/admin-reports.js')
+          s = p.read_text()
+
+          new_load = r'''    async loadData() {
+        let employees = [];
+        let jurnals = [];
+        let leaves = [];
+        let izinList = [];
+        let attendances = [];
+
+        const asArray = (result) => {
+            const data = result?.data;
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.items)) return data.items;
+            if (Array.isArray(data?.students)) return data.students;
+            if (Array.isArray(data?.attendance)) return data.attendance;
+            if (Array.isArray(data?.records)) return data.records;
+            return [];
+        };
+
+        const norm = (v) => String(v ?? '').trim();
+        const first = (...values) => values.find(v => norm(v) !== '');
+
+        try {
+            const [studentResult, journalResult, leaveResult, izinResult, settingsResult] = await Promise.all([
+                api.getStudents(),
+                api.getAllJournals(),
+                api.getAllLeaves(),
+                api.getAllIzin(),
+                api.getSettings()
+            ]);
+
+            employees = asArray(studentResult).map((s, index) => ({
+                ...s,
+                id: first(s.id, s.userId, s.userID, s.studentId, s.studentID, s.nim, s.NIM, s.email) || `student-${index + 1}`,
+                name: first(s.name, s.nama, s.fullName, s['Nama']) || 'Mahasiswa',
+                department: first(s.department, s.departemen, s.prodi, s.programStudi, s['Departemen']) || '-'
+            }));
+
+            jurnals = asArray(journalResult);
+            leaves = asArray(leaveResult);
+            izinList = asArray(izinResult);
+            this.settings = settingsResult?.data || {};
+
+            // Prefer the global attendance endpoint when it returns records.
+            try {
+                const allAttendanceResult = await api.getAllAttendance();
+                attendances = asArray(allAttendanceResult);
+            } catch (e) {
+                console.warn('getAllAttendance gagal, memakai getAttendance per mahasiswa:', e);
+            }
+
+            // Some backend versions expose only getAttendance(userId).
+            // Fetch per student when the global result is empty.
+            if (!attendances.length && employees.length) {
+                const results = await Promise.allSettled(
+                    employees.map(student => api.getAttendance(student.id))
+                );
+                results.forEach(result => {
+                    if (result.status === 'fulfilled') {
+                        attendances.push(...asArray(result.value));
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading report data:', error);
+            employees = storage.get('admin_students', storage.get('admin_employees', []));
+            jurnals = storage.get('jurnals', []);
+            leaves = storage.get('leaves', []);
+            izinList = storage.get('izin', []);
+            attendances = storage.get('attendance', []);
+            this.settings = {};
+        }
+
+        // Normalize attendance records so the report can match any legacy field name.
+        const employeeByKey = new Map();
+        employees.forEach(emp => {
+            [emp.id, emp.userId, emp.userID, emp.studentId, emp.studentID, emp.nim, emp.NIM, emp.email, emp.name, emp.nama]
+                .map(norm)
+                .filter(Boolean)
+                .forEach(key => employeeByKey.set(key.toLowerCase(), emp));
+        });
+
+        attendances = attendances.map(a => {
+            const rawKey = first(
+                a.userId, a.userID, a.userid, a.employeeId, a.employeeID, a.studentId, a.studentID,
+                a.nim, a.NIM, a.email, a.Email, a['User ID'], a['Student ID'], a['NIM'], a.nama, a.name
+            );
+            const emp = employeeByKey.get(norm(rawKey).toLowerCase());
+            return {
+                ...a,
+                userId: emp?.id || rawKey || '',
+                date: first(a.date, a.tanggal, a.Date, a.Tanggal),
+                clockIn: first(a.clockIn, a.clockin, a['Clock In'], a['Jam Masuk'], a.jamMasuk),
+                clockOut: first(a.clockOut, a.clockout, a['Clock Out'], a['Jam Keluar'], a.jamKeluar),
+                status: first(a.status, a.Status, a['Status Kehadiran']) || ''
+            };
+        });
+
+        // Remove duplicate records created by combining global/per-student endpoints.
+        const seen = new Set();
+        attendances = attendances.filter(a => {
+            const key = [norm(a.userId), norm(a.date), norm(a.clockIn), norm(a.clockOut), norm(a.status)].join('|');
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        this.rawAttendance = attendances;
+        this.rawEmployees = employees;
+        this.rawLeaves = leaves;
+        this.rawIzin = izinList;
+
+        this.attendanceData = employees.map(emp => {
+            const empId = norm(emp.id);
+            const empAtt = attendances.filter(a => norm(a.userId) === empId);
+            let present = 0;
+            let late = 0;
+
+            empAtt.forEach(a => {
+                if (a.clockIn) {
+                    present++;
+                    const status = norm(a.status).toLowerCase();
+                    if (['terlambat', 'late'].includes(status)) late++;
+                }
+            });
+
+            const empLeaves = leaves.filter(l => norm(l.userId) === empId && norm(l.status).toLowerCase() === 'approved');
+            const empIzin = izinList.filter(i => norm(i.userId) === empId && norm(i.status).toLowerCase() === 'approved');
+            let leaveDays = 0;
+            empLeaves.forEach(l => leaveDays += parseInt(l.duration, 10) || 1);
+            empIzin.forEach(i => leaveDays += parseInt(i.duration, 10) || 1);
+
+            return {
+                userId: emp.id,
+                name: emp.name,
+                department: emp.department,
+                present,
+                late,
+                absent: leaveDays,
+                total: present + leaveDays
+            };
+        });
+
+        const currentUser = auth.getCurrentUser();
+        this.jurnalData = jurnals.map(j => {
+            let emp = employees.find(e => norm(e.id) === norm(j.userId));
+            if (!emp && currentUser) emp = { name: currentUser.name, department: currentUser.department || '-' };
+            if (!emp) emp = { name: 'Mahasiswa', department: '-' };
+            return {
+                date: j.date,
+                name: emp.name,
+                department: emp.department,
+                tasks: j.tasks || '-',
+                achievements: j.achievements || '-',
+                obstacles: j.obstacles || '-',
+                plan: j.plan || '-',
+                photo: j.photo || null,
+                status: j.tasks ? 'filled' : 'empty',
+                updatedAt: j.updatedAt
+            };
+        });
+
+        this.leaveData = [
+            ...leaves.map(l => ({
+                name: l.name || l.nama || 'Mahasiswa',
+                department: l.department || l.departemen || '-',
+                type: l.type === 'annual' ? 'Cuti' : (l.type || 'Cuti'),
+                dates: l.startDate === l.endDate ? l.startDate : `${l.startDate} - ${l.endDate}`,
+                duration: l.duration,
+                reason: l.reason,
+                status: l.status
+            })),
+            ...izinList.map(i => ({
+                name: i.name || i.nama || 'Mahasiswa',
+                department: i.department || i.departemen || '-',
+                type: 'Izin',
+                dates: i.date,
+                duration: i.duration,
+                reason: i.reason,
+                status: i.status
+            }))
+        ];
+    },
+
+'''
+
+          pattern = r'    async loadData\(\) \{.*?\n    \},\n\n    populateEmployeeFilter\(\) \{'
+          replacement = new_load + '    populateEmployeeFilter() {'
+          s2, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'loadData block not found; replacements={n}')
+          p.write_text(s2)
+      - name: Commit patched report
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/admin-reports.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: load real student attendance into admin report'
+          git push

@@ -1,8 +1,8 @@
 /* Attendance report fix for Portal Mahasiswa.
  * Loaded after admin-reports.js.
  *
- * Important: the admin report must read the same student/attendance source
- * used by the student portal. It must not depend on shift_schedule_*.
+ * The report reads the same student/attendance source as the student portal.
+ * It does not depend on shift_schedule_*.
  */
 (() => {
     const norm = value => String(value ?? '').trim().toLowerCase();
@@ -20,9 +20,7 @@
     const pick = (obj, keys) => {
         for (const key of keys) {
             const value = obj?.[key];
-            if (value !== undefined && value !== null && String(value).trim() !== '') {
-                return value;
-            }
+            if (value !== undefined && value !== null && String(value).trim() !== '') return value;
         }
         return '';
     };
@@ -39,18 +37,12 @@
         'User ID', 'Student ID', 'Nama', 'name', 'nama'
     ];
 
-    const identitySet = obj => new Set(
-        ID_KEYS
-            .map(key => norm(obj?.[key]))
-            .filter(Boolean)
-    );
+    const identitySet = obj => new Set(ID_KEYS.map(key => norm(obj?.[key])).filter(Boolean));
 
     const samePerson = (a, b) => {
         const left = identitySet(a);
         const right = new Set(ATT_ID_KEYS.map(key => norm(b?.[key])).filter(Boolean));
-        for (const value of left) {
-            if (right.has(value)) return true;
-        }
+        for (const value of left) if (right.has(value)) return true;
         return false;
     };
 
@@ -77,14 +69,33 @@
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     };
 
-    const workdaysInMonth = monthFilter => {
+    // Only elapsed weekdays are eligible to be marked absent.
+    // Future dates in the selected month must NOT become absences.
+    const elapsedWorkdaysInMonth = monthFilter => {
         if (!monthFilter) return 0;
         const [year, month] = monthFilter.split('-').map(Number);
         if (!year || !month) return 0;
-        const days = new Date(year, month, 0).getDate();
+
+        const monthStart = new Date(year, month - 1, 1);
+        const monthEnd = new Date(year, month, 0);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
+        // For a past month use the whole month; for the current month stop at today;
+        // for a future month there are zero elapsed workdays.
+        const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const effectiveEnd = monthFilter < currentMonth
+            ? monthEnd
+            : monthFilter > currentMonth
+                ? null
+                : (today < monthEnd ? today : monthEnd);
+
+        if (!effectiveEnd) return 0;
+
         let count = 0;
-        for (let day = 1; day <= days; day++) {
-            const weekday = new Date(year, month - 1, day).getDay();
+        for (let day = 1; day <= effectiveEnd.getDate(); day++) {
+            const date = new Date(year, month - 1, day);
+            const weekday = date.getDay();
             if (weekday !== 0 && weekday !== 6) count++;
         }
         return count;
@@ -124,12 +135,6 @@
         return total;
     };
 
-    /*
-     * Replace the old report loader.
-     * getAllAttendance() has proven unreliable for this admin report, while
-     * getAttendance(studentId) is the endpoint already used by the student portal.
-     * Fetch each student's attendance from that same endpoint.
-     */
     const originalLoadData = adminReports.loadData.bind(adminReports);
 
     adminReports.loadData = async function () {
@@ -152,9 +157,7 @@
             jurnals = firstArray(journalResult?.data ?? journalResult);
             leaves = firstArray(leaveResult?.data ?? leaveResult);
             izinList = firstArray(izinResult?.data ?? izinResult);
-            settings = firstArray(settingsResult?.data ?? settingsResult).length
-                ? firstArray(settingsResult?.data ?? settingsResult)[0]
-                : (settingsResult?.data || {});
+            settings = settingsResult?.data || {};
         } catch (error) {
             console.error('Student report base data error:', error);
             students = firstArray(storage.get('admin_students', []));
@@ -175,8 +178,6 @@
             const rows = firstArray(result.value?.data ?? result.value);
             const student = students[index];
             rows.forEach(row => {
-                // Some backends return all attendance even when userId is supplied.
-                // Do not duplicate another student's record in that case.
                 if (!row || samePerson(student, row)) attendance.push(row);
             });
         });
@@ -197,11 +198,8 @@
             total: 0
         }));
 
-        const currentUser = auth.getCurrentUser();
         this.jurnalData = jurnals.map(j => {
-            const emp = students.find(s => samePerson(s, j)) ||
-                (currentUser ? { name: currentUser.name, department: currentUser.department || '-' } : null) ||
-                { name: 'Mahasiswa', department: '-' };
+            const emp = students.find(s => samePerson(s, j)) || { name: 'Mahasiswa', department: '-' };
             return {
                 date: j.date,
                 name: emp.name,
@@ -220,7 +218,11 @@
     };
 
     adminReports.getFilteredAttendance = function () {
-        const monthFilter = this.filters?.attendance?.month || '';
+        // The HTML input already contains 2026-08 on initial load, but the old
+        // code only copied it into filters after a change event. Read the DOM
+        // value as fallback so the initial render uses the selected period too.
+        const monthInput = document.getElementById('attendance-month');
+        const monthFilter = this.filters?.attendance?.month || monthInput?.value || '';
         const deptFilter = this.filters?.attendance?.dept || '';
         const statusFilter = this.filters?.attendance?.status || '';
         const students = firstArray(this.rawEmployees);
@@ -240,7 +242,7 @@
 
             const leaveDays = approvedDaysFor(this.rawLeaves, student, monthFilter, 'leave');
             const izinDays = approvedDaysFor(this.rawIzin, student, monthFilter, 'izin');
-            const baseline = monthFilter ? workdaysInMonth(monthFilter) : present + leaveDays + izinDays;
+            const baseline = monthFilter ? elapsedWorkdaysInMonth(monthFilter) : present + leaveDays + izinDays;
             const absent = monthFilter
                 ? Math.max(0, baseline - present - leaveDays - izinDays)
                 : 0;

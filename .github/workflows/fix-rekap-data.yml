@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/fix-rekap-data.yml'
+      - 'js/admin-reports.js'
 
 permissions:
   contents: write
@@ -65,7 +66,6 @@ jobs:
             izinList = asArray(izinResult);
             this.settings = settingsResult?.data || {};
 
-            // Prefer the global attendance endpoint when it returns records.
             try {
                 const allAttendanceResult = await api.getAllAttendance();
                 attendances = asArray(allAttendanceResult);
@@ -73,16 +73,12 @@ jobs:
                 console.warn('getAllAttendance gagal, memakai getAttendance per mahasiswa:', e);
             }
 
-            // Some backend versions expose only getAttendance(userId).
-            // Fetch per student when the global result is empty.
             if (!attendances.length && employees.length) {
                 const results = await Promise.allSettled(
                     employees.map(student => api.getAttendance(student.id))
                 );
                 results.forEach(result => {
-                    if (result.status === 'fulfilled') {
-                        attendances.push(...asArray(result.value));
-                    }
+                    if (result.status === 'fulfilled') attendances.push(...asArray(result.value));
                 });
             }
         } catch (error) {
@@ -95,12 +91,10 @@ jobs:
             this.settings = {};
         }
 
-        // Normalize attendance records so the report can match any legacy field name.
         const employeeByKey = new Map();
         employees.forEach(emp => {
             [emp.id, emp.userId, emp.userID, emp.studentId, emp.studentID, emp.nim, emp.NIM, emp.email, emp.name, emp.nama]
-                .map(norm)
-                .filter(Boolean)
+                .map(norm).filter(Boolean)
                 .forEach(key => employeeByKey.set(key.toLowerCase(), emp));
         });
 
@@ -120,7 +114,6 @@ jobs:
             };
         });
 
-        // Remove duplicate records created by combining global/per-student endpoints.
         const seen = new Set();
         attendances = attendances.filter(a => {
             const key = [norm(a.userId), norm(a.date), norm(a.clockIn), norm(a.clockOut), norm(a.status)].join('|');
@@ -154,15 +147,7 @@ jobs:
             empLeaves.forEach(l => leaveDays += parseInt(l.duration, 10) || 1);
             empIzin.forEach(i => leaveDays += parseInt(i.duration, 10) || 1);
 
-            return {
-                userId: emp.id,
-                name: emp.name,
-                department: emp.department,
-                present,
-                late,
-                absent: leaveDays,
-                total: present + leaveDays
-            };
+            return { userId: emp.id, name: emp.name, department: emp.department, present, late, absent: leaveDays, total: present + leaveDays };
         });
 
         const currentUser = auth.getCurrentUser();
@@ -171,37 +156,23 @@ jobs:
             if (!emp && currentUser) emp = { name: currentUser.name, department: currentUser.department || '-' };
             if (!emp) emp = { name: 'Mahasiswa', department: '-' };
             return {
-                date: j.date,
-                name: emp.name,
-                department: emp.department,
-                tasks: j.tasks || '-',
-                achievements: j.achievements || '-',
-                obstacles: j.obstacles || '-',
-                plan: j.plan || '-',
-                photo: j.photo || null,
-                status: j.tasks ? 'filled' : 'empty',
-                updatedAt: j.updatedAt
+                date: j.date, name: emp.name, department: emp.department,
+                tasks: j.tasks || '-', achievements: j.achievements || '-',
+                obstacles: j.obstacles || '-', plan: j.plan || '-', photo: j.photo || null,
+                status: j.tasks ? 'filled' : 'empty', updatedAt: j.updatedAt
             };
         });
 
         this.leaveData = [
             ...leaves.map(l => ({
-                name: l.name || l.nama || 'Mahasiswa',
-                department: l.department || l.departemen || '-',
+                name: l.name || l.nama || 'Mahasiswa', department: l.department || l.departemen || '-',
                 type: l.type === 'annual' ? 'Cuti' : (l.type || 'Cuti'),
                 dates: l.startDate === l.endDate ? l.startDate : `${l.startDate} - ${l.endDate}`,
-                duration: l.duration,
-                reason: l.reason,
-                status: l.status
+                duration: l.duration, reason: l.reason, status: l.status
             })),
             ...izinList.map(i => ({
-                name: i.name || i.nama || 'Mahasiswa',
-                department: i.department || i.departemen || '-',
-                type: 'Izin',
-                dates: i.date,
-                duration: i.duration,
-                reason: i.reason,
-                status: i.status
+                name: i.name || i.nama || 'Mahasiswa', department: i.department || i.departemen || '-',
+                type: 'Izin', dates: i.date, duration: i.duration, reason: i.reason, status: i.status
             }))
         ];
     },

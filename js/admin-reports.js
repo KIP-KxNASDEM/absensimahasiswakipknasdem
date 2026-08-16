@@ -145,7 +145,7 @@ const adminReports = {
                 emp = { name: currentUser.name, department: currentUser.department || '-' };
             }
             if (!emp) {
-                emp = { name: 'Karyawan', department: '-' };
+                emp = { name: 'Mahasiswa', department: '-' };
             }
             return {
                 date: j.date,
@@ -187,7 +187,7 @@ const adminReports = {
         const employees = storage.get('admin_employees', []);
         const select = document.getElementById('jurnal-employee-filter');
         if (select) {
-            select.innerHTML = '<option value="">Semua Karyawan</option>' +
+            select.innerHTML = '<option value="">Semua Mahasiswa</option>' +
                 employees.map(emp => `<option value="${emp.name}">${emp.name}</option>`).join('');
         }
     },

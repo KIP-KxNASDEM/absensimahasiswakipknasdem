@@ -223,7 +223,7 @@ const shiftSchedule = {
                 <tr>
                     <td colspan="${daysInMonth + 1}" class="shift-schedule-empty">
                         <i class="fas fa-users-slash"></i>
-                        <p>Tidak ada karyawan yang sesuai dengan filter</p>
+                        <p>Tidak ada mahasiswa yang sesuai dengan filter</p>
                     </td>
                 </tr>
             `;

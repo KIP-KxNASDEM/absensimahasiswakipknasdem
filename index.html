@@ -60,7 +60,7 @@
                 </div>
                 <form id="login-form" class="login-form">
                     <div class="input-group">
-                        <label for="login-email">Email / ID Karyawan</label>
+                        <label for="login-email">Email / ID Mahasiswa</label>
                         <div class="input-wrapper">
                             <i class="fas fa-envelope"></i>
                             <input type="text" id="login-email" placeholder="Masukkan email atau ID" required>
@@ -83,7 +83,7 @@
                                 <input type="radio" name="role" value="employee" checked>
                                 <span class="role-card">
                                     <i class="fas fa-user"></i>
-                                    <span>Karyawan</span>
+                                    <span>Mahasiswa</span>
                                 </span>
                             </label>
                             <label class="role-option">
@@ -124,7 +124,7 @@
                 </button>
             </div>
 
-            <!-- Menu untuk Karyawan -->
+            <!-- Menu untuk Mahasiswa -->
             <nav class="sidebar-nav employee-menu" id="employee-menu">
                 <div class="nav-section">
                     <span class="nav-label">Menu Utama</span>
@@ -177,7 +177,7 @@
                         <li class="nav-item" data-page="employees">
                             <a href="#" class="nav-link">
                                 <i class="fas fa-users"></i>
-                                <span>Data Karyawan</span>
+                                <span>Data Mahasiswa</span>
                             </a>
                         </li>
                         <li class="nav-item" data-page="attendance-reports">
@@ -217,7 +217,7 @@
                     </div>
                     <div class="user-info">
                         <span class="user-name" id="user-name">Nama User</span>
-                        <span class="user-role" id="user-role">Karyawan</span>
+                        <span class="user-role" id="user-role">Mahasiswa</span>
                     </div>
                     <button class="btn-logout" id="btn-logout" title="Logout">
                         <i class="fas fa-sign-out-alt"></i>
@@ -937,7 +937,7 @@
                         <div class="admin-header">
                             <div class="admin-welcome">
                                 <h2>Dashboard Admin</h2>
-                                <p>Ringkasan statistik seluruh karyawan</p>
+                                <p>Ringkasan statistik seluruh mahasiswa</p>
                             </div>
                             <div class="admin-date-filter"><select class="select-filter">
                                     <option>Hari Ini</option>
@@ -949,7 +949,7 @@
                             <div class="admin-stat-card">
                                 <div class="stat-icon employees"><i class="fas fa-users"></i></div>
                                 <div class="stat-details"><span class="stat-number" id="total-employees">0</span><span
-                                        class="stat-label">Total Karyawan</span></div>
+                                        class="stat-label">Total Mahasiswa</span></div>
                             </div>
                             <div class="admin-stat-card">
                                 <div class="stat-icon present"><i class="fas fa-user-check"></i></div>
@@ -1008,7 +1008,7 @@
                             </div>
                             <div class="admin-info-card">
                                 <div class="card-header">
-                                    <h3>Karyawan Online</h3><span class="online-count"><span id="online-count">0</span>
+                                    <h3>Mahasiswa Online</h3><span class="online-count"><span id="online-count">0</span>
                                         online</span>
                                 </div>
                                 <div class="online-users-list" id="admin-online-users"></div>
@@ -1022,16 +1022,16 @@
                     <div class="employees-container">
                         <div class="employees-header">
                             <div class="employees-title">
-                                <h2>Data Karyawan</h2>
-                                <p>Kelola data dan informasi karyawan</p>
+                                <h2>Data Mahasiswa</h2>
+                                <p>Kelola data dan informasi mahasiswa</p>
                             </div>
                             <div class="employees-actions"><button class="btn-primary" id="btn-add-employee"><i
-                                        class="fas fa-plus"></i><span>Tambah Karyawan</span></button></div>
+                                        class="fas fa-plus"></i><span>Tambah Mahasiswa</span></button></div>
                         </div>
                         <div class="employees-filters-card">
                             <div class="employees-filters">
                                 <div class="filter-group"><i class="fas fa-search"></i><input type="text"
-                                        id="employee-search" placeholder="Cari nama karyawan..."></div>
+                                        id="employee-search" placeholder="Cari nama mahasiswa..."></div>
                                 <div class="filter-group">
                                     <select id="dept-filter">
                                         <option value="">Semua Departemen</option>
@@ -1057,7 +1057,7 @@
                                 <table class="employees-table" id="employees-table">
                                     <thead>
                                         <tr>
-                                            <th>Karyawan</th>
+                                            <th>Mahasiswa</th>
                                             <th>ID</th>
                                             <th>Departemen</th>
                                             <th>Jabatan</th>
@@ -1071,7 +1071,7 @@
                             </div>
                             <div class="mobile-cards" id="employees-mobile-cards"></div>
                             <div class="table-pagination"><span class="pagination-info">Menampilkan 1-10 dari 50
-                                    karyawan</span>
+                                    mahasiswa</span>
                                 <div class="pagination-buttons"><button class="btn-page" disabled><i
                                             class="fas fa-chevron-left"></i></button><button
                                         class="btn-page active">1</button><button class="btn-page">2</button><button
@@ -1088,7 +1088,7 @@
                         <div class="reports-header">
                             <div class="reports-title">
                                 <h2>Rekap Absensi</h2>
-                                <p>Rekap kehadiran seluruh karyawan</p>
+                                <p>Rekap kehadiran seluruh mahasiswa</p>
                             </div>
                             <div class="reports-actions"><button class="btn-secondary" id="btn-export-attendance"><i
                                         class="fas fa-download"></i><span>Export Excel</span></button><button
@@ -1144,7 +1144,7 @@
                         <div class="reports-header">
                             <div class="reports-title">
                                 <h2>Rekap Jurnal</h2>
-                                <p>Rekap jurnal kerja karyawan</p>
+                                <p>Rekap jurnal kerja mahasiswa</p>
                             </div>
                             <div class="reports-actions"><button class="btn-secondary" id="btn-export-jurnal"><i
                                         class="fas fa-download"></i><span>Export Excel</span></button><button
@@ -1155,8 +1155,8 @@
                             <div class="reports-filters">
                                 <div class="filter-group"><label>Periode</label><input type="month" id="jurnal-month"
                                         value="2026-03"></div>
-                                <div class="filter-group"><label>Karyawan</label><select id="jurnal-employee-filter">
-                                        <option value="">Semua Karyawan</option>
+                                <div class="filter-group"><label>Mahasiswa</label><select id="jurnal-employee-filter">
+                                        <option value="">Semua Mahasiswa</option>
                                     </select></div>
                                 <div class="filter-group"><label>Status</label><select id="jurnal-status-filter">
                                         <option value="">Semua</option>
@@ -1192,7 +1192,7 @@
                         <div class="reports-header">
                             <div class="reports-title">
                                 <h2>Rekap Cuti & Izin</h2>
-                                <p>Rekap pengajuan cuti dan izin karyawan</p>
+                                <p>Rekap pengajuan cuti dan izin mahasiswa</p>
                             </div>
                             <div class="reports-actions"><button class="btn-secondary" id="btn-export-leave"><i
                                         class="fas fa-download"></i><span>Export Excel</span></button><button
@@ -1245,8 +1245,8 @@
                     <div class="shift-schedule-container">
                         <div class="shift-schedule-header">
                             <div class="shift-schedule-title">
-                                <h2>Jadwal Shift Karyawan</h2>
-                                <p>Atur jadwal shift kerja karyawan per bulan</p>
+                                <h2>Jadwal Shift Mahasiswa</h2>
+                                <p>Atur jadwal shift kerja mahasiswa per bulan</p>
                             </div>
                             <div class="shift-schedule-actions">
                                 <button class="btn-secondary" id="btn-copy-schedule">
@@ -1299,10 +1299,10 @@
                                     </select>
                                 </div>
                                 <div class="filter-group search-group">
-                                    <label>Cari Karyawan</label>
+                                    <label>Cari Mahasiswa</label>
                                     <div class="search-input-wrapper">
                                         <i class="fas fa-search"></i>
-                                        <input type="text" id="schedule-employee-search" placeholder="Nama karyawan...">
+                                        <input type="text" id="schedule-employee-search" placeholder="Nama mahasiswa...">
                                     </div>
                                 </div>
                             </div>
@@ -1322,7 +1322,7 @@
                                 <table class="shift-schedule-table" id="shift-schedule-table">
                                     <thead>
                                         <tr class="header-row">
-                                            <th class="employee-header sticky-col">Karyawan</th>
+                                            <th class="employee-header sticky-col">Mahasiswa</th>
                                             <!-- Dates will be generated by JS -->
                                         </tr>
                                     </thead>
@@ -1338,7 +1338,7 @@
                                 <h4>Ringkasan Bulan Ini</h4>
                                 <div class="summary-stats" id="schedule-summary">
                                     <div class="summary-item">
-                                        <span class="summary-label">Total Karyawan</span>
+                                        <span class="summary-label">Total Mahasiswa</span>
                                         <span class="summary-value" id="summary-total-employees">0</span>
                                     </div>
                                     <div class="summary-item">
@@ -1465,18 +1465,18 @@
         </nav>
     </div>
 
-    <!-- Modal Tambah Karyawan -->
+    <!-- Modal Tambah Mahasiswa -->
     <div class="modal-overlay" id="modal-add-employee" style="display: none;">
         <div class="modal-container">
             <div class="modal-header">
-                <h3>Tambah Karyawan Baru</h3>
+                <h3>Tambah Mahasiswa Baru</h3>
                 <button class="btn-close-modal" id="btn-close-modal"><i class="fas fa-times"></i></button>
             </div>
             <form id="form-add-employee" class="modal-form">
                 <div class="form-row two-col">
                     <div class="form-group">
                         <label for="emp-name">Nama Lengkap</label>
-                        <input type="text" id="emp-name" placeholder="Nama karyawan" required>
+                        <input type="text" id="emp-name" placeholder="Nama mahasiswa" required>
                     </div>
                     <div class="form-group">
                         <label for="emp-email">Email</label>
@@ -1531,7 +1531,7 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="btn-cancel-add">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan Karyawan</button>
+                    <button type="submit" class="btn-primary">Simpan Mahasiswa</button>
                 </div>
             </form>
         </div>
@@ -1555,7 +1555,7 @@
                     <div class="profile-details">
                         <h2 id="profile-name">Nama User</h2>
                         <p class="profile-email-display" id="profile-email">email@company.com</p>
-                        <span class="profile-role-badge" id="profile-role">Karyawan</span>
+                        <span class="profile-role-badge" id="profile-role">Mahasiswa</span>
                     </div>
                 </div>
 

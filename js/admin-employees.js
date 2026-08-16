@@ -134,7 +134,7 @@ const adminEmployees = {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" style="text-align: center; padding: var(--spacing-xl);">
-                        Tidak ada data karyawan
+                        Tidak ada data mahasiswa
                     </td>
                 </tr>
             `;
@@ -266,7 +266,7 @@ const adminEmployees = {
         const info = document.querySelector('.pagination-info');
 
         if (info) {
-            info.textContent = `Menampilkan ${filtered.length > 0 ? start : 0}-${end} dari ${filtered.length} karyawan`;
+            info.textContent = `Menampilkan ${filtered.length > 0 ? start : 0}-${end} dari ${filtered.length} mahasiswa`;
         }
     },
 
@@ -348,9 +348,9 @@ const adminEmployees = {
                 this.renderMobileCards();
                 this.updatePaginationInfo();
 
-                toast.success(`Karyawan ${name} berhasil ditambahkan!`);
+                toast.success(`Mahasiswa ${name} berhasil ditambahkan!`);
             } else {
-                toast.error(result.error || 'Gagal menambahkan karyawan');
+                toast.error(result.error || 'Gagal menambahkan mahasiswa');
             }
         } catch (error) {
             console.error('Error adding employee:', error);
@@ -391,26 +391,26 @@ const adminEmployees = {
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id === id);
         if (emp) {
-            alert(`Detail Karyawan:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nDepartemen: ${emp.department}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
+            alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nDepartemen: ${emp.department}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
         }
     },
 
     editEmployee(id) {
-        toast.info('Fitur edit karyawan akan segera hadir');
+        toast.info('Fitur edit mahasiswa akan segera hadir');
     },
 
     async deleteEmployee(id) {
-        if (confirm('Apakah Anda yakin ingin menghapus karyawan ini?')) {
+        if (confirm('Apakah Anda yakin ingin menghapus mahasiswa ini?')) {
             try {
                 await api.deleteEmployee(id);
                 this.employees = this.employees.filter(e => e.id !== id);
                 this.renderTable();
                 this.renderMobileCards();
                 this.updatePaginationInfo();
-                toast.success('Karyawan berhasil dihapus');
+                toast.success('Mahasiswa berhasil dihapus');
             } catch (error) {
                 console.error('Error deleting employee:', error);
-                toast.error('Gagal menghapus karyawan');
+                toast.error('Gagal menghapus mahasiswa');
             }
         }
     }

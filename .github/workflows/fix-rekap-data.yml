@@ -1,219 +1,182 @@
-name: Fix Rekap Absensi Data
+name: Fix Rekap Absensi
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - '.github/workflows/fix-rekap-data.yml'
-      - 'js/admin-reports.js'
 
 permissions:
   contents: write
 
 jobs:
-  patch:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Repair admin attendance matching
+      - name: Install attendance report fix
         run: |
-          python3 <<'PY'
-          from pathlib import Path
-          import re
+          cat > js/admin-reports-fix.js <<'EOF_JS'
+          /* Attendance report matching fix. Loaded after admin-reports.js. */
+          (() => {
+              const norm = value => String(value ?? '').trim().toLowerCase();
 
-          p = Path('js/admin-reports.js')
-          s = p.read_text()
+              const values = (obj, keys) => keys
+                  .map(key => obj?.[key])
+                  .map(norm)
+                  .filter(Boolean);
 
-          new_load = r'''    async loadData() {
-        let employees = [];
-        let jurnals = [];
-        let leaves = [];
-        let izinList = [];
-        let attendances = [];
+              const firstArray = value => {
+                  if (Array.isArray(value)) return value;
+                  if (Array.isArray(value?.items)) return value.items;
+                  if (Array.isArray(value?.data)) return value.data;
+                  if (Array.isArray(value?.records)) return value.records;
+                  if (Array.isArray(value?.students)) return value.students;
+                  if (Array.isArray(value?.employees)) return value.employees;
+                  return [];
+              };
 
-        const asArray = (result) => {
-            const data = result?.data;
-            if (Array.isArray(data)) return data;
-            if (Array.isArray(data?.items)) return data.items;
-            if (Array.isArray(data?.students)) return data.students;
-            if (Array.isArray(data?.employees)) return data.employees;
-            if (Array.isArray(data?.attendance)) return data.attendance;
-            if (Array.isArray(data?.records)) return data.records;
-            return [];
-        };
+              const EMP_KEYS = [
+                  'id','userId','userID','userid','employeeId','employeeID',
+                  'studentId','studentID','nim','NIM','email','Email','name','nama'
+              ];
 
-        const norm = (value) => String(value ?? '').trim();
-        const first = (...values) => values.find(value => norm(value) !== '');
+              const ATT_KEYS = [
+                  'userId','userID','userid','employeeId','employeeID',
+                  'studentId','studentID','nim','NIM','email','Email',
+                  'User ID','Student ID','NIM','name','nama'
+              ];
 
-        try {
-            const [empResult, journalResult, leaveResult, izinResult, attResult, settingsResult] = await Promise.all([
-                api.getEmployees(),
-                api.getAllJournals(),
-                api.getAllLeaves(),
-                api.getAllIzin(),
-                api.getAllAttendance(),
-                api.getSettings()
-            ]);
+              const findEmployee = (attendance, employees) => {
+                  const aKeys = new Set(values(attendance, ATT_KEYS));
+                  if (!aKeys.size) return null;
+                  return employees.find(emp => values(emp, EMP_KEYS).some(key => aKeys.has(key))) || null;
+              };
 
-            employees = asArray(empResult);
-            jurnals = asArray(journalResult);
-            leaves = asArray(leaveResult);
-            izinList = asArray(izinResult);
-            attendances = asArray(attResult);
-            this.settings = settingsResult?.data || {};
-        } catch (error) {
-            console.error('Error loading report data:', error);
-            employees = storage.get('admin_employees', []);
-            jurnals = storage.get('jurnals', []);
-            leaves = storage.get('leaves', []);
-            izinList = storage.get('izin', []);
-            attendances = storage.get('attendance', []);
-            this.settings = {};
-        }
+              const getClockIn = a => a?.clockIn ?? a?.clockin ?? a?.['Clock In'] ?? a?.['Jam Masuk'] ?? a?.jamMasuk;
+              const getStatus = a => norm(a?.status ?? a?.Status ?? a?.['Status Kehadiran']);
+              const getDate = a => a?.date ?? a?.tanggal ?? a?.Date ?? a?.Tanggal;
 
-        // Normalize student records and build aliases for matching attendance.
-        employees = employees.map((emp, index) => ({
-            ...emp,
-            id: first(emp.id, emp.userId, emp.userID, emp.employeeId, emp.employeeID, emp.studentId, emp.studentID, emp.nim, emp.NIM, emp.email) || `student-${index + 1}`,
-            name: first(emp.name, emp.nama, emp.fullName, emp['Nama']) || 'Mahasiswa',
-            department: first(emp.department, emp.departemen, emp.prodi, emp.programStudi, emp['Departemen']) || '-'
-        }));
+              const monthOf = value => {
+                  if (!value) return '';
+                  const d = new Date(value);
+                  if (Number.isNaN(d.getTime())) return '';
+                  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+              };
 
-        const employeeByKey = new Map();
-        employees.forEach(emp => {
-            [emp.id, emp.userId, emp.userID, emp.employeeId, emp.employeeID, emp.studentId, emp.studentID, emp.nim, emp.NIM, emp.email, emp.name, emp.nama]
-                .map(norm)
-                .filter(Boolean)
-                .forEach(key => employeeByKey.set(key.toLowerCase(), emp));
-        });
+              adminReports.getFilteredAttendance = function () {
+                  const monthFilter = this.filters?.attendance?.month || '';
+                  const deptFilter = this.filters?.attendance?.dept || '';
+                  const statusFilter = this.filters?.attendance?.status || '';
 
-        // Normalize every attendance record to the canonical employee id.
-        attendances = attendances.map(a => {
-            const rawKey = first(
-                a.userId, a.userID, a.userid,
-                a.employeeId, a.employeeID,
-                a.studentId, a.studentID,
-                a.nim, a.NIM,
-                a.email, a.Email,
-                a['User ID'], a['Student ID'], a['NIM'],
-                a.nama, a.name
-            );
-            const employee = employeeByKey.get(norm(rawKey).toLowerCase());
-            return {
-                ...a,
-                userId: employee?.id || rawKey || '',
-                date: first(a.date, a.tanggal, a.Date, a.Tanggal),
-                clockIn: first(a.clockIn, a.clockin, a['Clock In'], a['Jam Masuk'], a.jamMasuk),
-                clockOut: first(a.clockOut, a.clockout, a['Clock Out'], a['Jam Keluar'], a.jamKeluar),
-                status: first(a.status, a.Status, a['Status Kehadiran']) || ''
-            };
-        });
+                  const employees = firstArray(this.rawEmployees);
+                  const attendances = firstArray(this.rawAttendance);
+                  const leaves = firstArray(this.rawLeaves);
+                  const izin = firstArray(this.rawIzin);
 
-        // Remove exact duplicates.
-        const seen = new Set();
-        attendances = attendances.filter(a => {
-            const key = [norm(a.userId), norm(a.date), norm(a.clockIn), norm(a.clockOut), norm(a.status)].join('|');
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
+                  return employees.map(employee => {
+                      const empAttendance = attendances.filter(a => {
+                          const matched = findEmployee(a, [employee]);
+                          if (!matched) return false;
+                          if (!monthFilter) return true;
+                          return monthOf(getDate(a)) === monthFilter;
+                      });
 
-        this.rawAttendance = attendances;
-        this.rawEmployees = employees;
-        this.rawLeaves = leaves;
-        this.rawIzin = izinList;
+                      const present = empAttendance.filter(a => !!getClockIn(a)).length;
+                      const late = empAttendance.filter(a => {
+                          const status = getStatus(a);
+                          return !!getClockIn(a) && (status === 'terlambat' || status === 'late');
+                      }).length;
 
-        this.attendanceData = employees.map(emp => {
-            const empId = norm(emp.id);
-            const empAtt = attendances.filter(a => norm(a.userId) === empId);
-            let present = 0;
-            let late = 0;
+                      const empKeys = new Set(values(employee, EMP_KEYS));
+                      let leaveDays = 0;
 
-            empAtt.forEach(a => {
-                if (a.clockIn) {
-                    present++;
-                    const status = norm(a.status).toLowerCase();
-                    if (status === 'terlambat' || status === 'late') late++;
-                }
-            });
+                      leaves.forEach(l => {
+                          const lKeys = new Set(values(l, EMP_KEYS));
+                          if (![...empKeys].some(k => lKeys.has(k))) return;
+                          if (norm(l.status) !== 'approved') return;
+                          const duration = parseInt(l.duration, 10);
+                          if (!monthFilter) {
+                              leaveDays += Number.isFinite(duration) && duration > 0 ? duration : 1;
+                              return;
+                          }
+                          const start = new Date(l.startDate);
+                          const end = new Date(l.endDate || l.startDate);
+                          const monthStart = new Date(`${monthFilter}-01T00:00:00`);
+                          const [y, m] = monthFilter.split('-').map(Number);
+                          const monthEnd = new Date(y, m, 0, 23, 59, 59);
+                          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
+                          const overlapStart = start > monthStart ? start : monthStart;
+                          const overlapEnd = end < monthEnd ? end : monthEnd;
+                          if (overlapStart <= overlapEnd) {
+                              leaveDays += Math.floor((overlapEnd - overlapStart) / 86400000) + 1;
+                          }
+                      });
 
-            const empLeaves = leaves.filter(l => norm(l.userId) === empId && norm(l.status).toLowerCase() === 'approved');
-            const empIzin = izinList.filter(i => norm(i.userId) === empId && norm(i.status).toLowerCase() === 'approved');
-            let leaveDays = 0;
-            empLeaves.forEach(l => leaveDays += parseInt(l.duration, 10) || 1);
-            empIzin.forEach(i => leaveDays += parseInt(i.duration, 10) || 1);
+                      izin.forEach(i => {
+                          const iKeys = new Set(values(i, EMP_KEYS));
+                          if (![...empKeys].some(k => iKeys.has(k))) return;
+                          if (norm(i.status) !== 'approved') return;
+                          if (monthFilter && monthOf(i.date) !== monthFilter) return;
+                          const duration = parseInt(i.duration, 10);
+                          leaveDays += Number.isFinite(duration) && duration > 0 ? duration : 1;
+                      });
 
-            return {
-                userId: emp.id,
-                name: emp.name,
-                department: emp.department,
-                present,
-                late,
-                absent: leaveDays,
-                total: present + leaveDays
-            };
-        });
+                      let workDays = 0;
+                      if (monthFilter && this.settings) {
+                          const key = `shift_schedule_${monthFilter}`;
+                          let schedule = this.settings[key];
+                          try {
+                              if (typeof schedule === 'string') schedule = JSON.parse(schedule);
+                          } catch (_) {
+                              schedule = null;
+                          }
+                          const employeeSchedule = schedule?.[employee.id];
+                          if (employeeSchedule) {
+                              const [year, month] = monthFilter.split('-').map(Number);
+                              const days = new Date(year, month, 0).getDate();
+                              for (let day = 1; day <= days; day++) {
+                                  const shift = employeeSchedule[day];
+                                  if (shift && norm(shift) !== 'libur') workDays++;
+                              }
+                          }
+                      }
 
-        const currentUser = auth.getCurrentUser();
-        this.jurnalData = jurnals.map(j => {
-            const journalKey = first(j.userId, j.userID, j.studentId, j.studentID, j.nim, j.NIM, j.email, j.name, j.nama);
-            let emp = employeeByKey.get(norm(journalKey).toLowerCase());
-            if (!emp && currentUser) emp = { name: currentUser.name, department: currentUser.department || '-' };
-            if (!emp) emp = { name: 'Mahasiswa', department: '-' };
-            return {
-                date: j.date,
-                name: emp.name,
-                department: emp.department,
-                tasks: j.tasks || '-',
-                achievements: j.achievements || '-',
-                obstacles: j.obstacles || '-',
-                plan: j.plan || '-',
-                photo: j.photo || null,
-                status: j.tasks ? 'filled' : 'empty',
-                updatedAt: j.updatedAt
-            };
-        });
+                      const absent = workDays > 0
+                          ? Math.max(0, workDays - present - leaveDays)
+                          : 0;
 
-        this.leaveData = [
-            ...leaves.map(l => ({
-                name: l.name || l.nama || 'Mahasiswa',
-                department: l.department || l.departemen || '-',
-                type: l.type === 'annual' ? 'Cuti' : (l.type || 'Cuti'),
-                dates: l.startDate === l.endDate ? l.startDate : `${l.startDate} - ${l.endDate}`,
-                duration: l.duration,
-                reason: l.reason,
-                status: l.status
-            })),
-            ...izinList.map(i => ({
-                name: i.name || i.nama || 'Mahasiswa',
-                department: i.department || i.departemen || '-',
-                type: 'Izin',
-                dates: i.date,
-                duration: i.duration,
-                reason: i.reason,
-                status: i.status
-            }))
-        ];
-    },
+                      return {
+                          userId: employee.id,
+                          name: employee.name,
+                          department: employee.department,
+                          present,
+                          late,
+                          absent,
+                          total: present + absent
+                      };
+                  }).filter(row => {
+                      if (deptFilter && row.department !== deptFilter) return false;
+                      if (!statusFilter) return true;
+                      if (statusFilter === 'present') return row.present > 0;
+                      if (statusFilter === 'absent') return row.absent > 0;
+                      if (statusFilter === 'late') return row.late > 0;
+                      return true;
+                  });
+              };
+          })();
+          EOF_JS
 
-'''
+          python3 -c "from pathlib import Path; p=Path('index.html'); s=p.read_text(); m='<script src=\"js/admin-reports.js\"></script>'; assert m in s; p.write_text(s.replace(m,m+'\\n    <script src=\"js/admin-reports-fix.js\"></script>',1))"
 
-          pattern = r'    async loadData\(\) \{.*?\n    \},\n\n    populateEmployeeFilter\(\) \{'
-          replacement = new_load + '    populateEmployeeFilter() {'
-          s2, count = re.subn(pattern, replacement, s, count=1, flags=re.S)
-          if count != 1:
-              raise SystemExit(f'loadData block not found: {count}')
-
-          p.write_text(s2)
-          PY
-
-      - name: Commit repair
+      - name: Commit fix
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/admin-reports.js
+          git add index.html js/admin-reports-fix.js
           git diff --cached --quiet && exit 0
-          git commit -m 'fix: repair admin attendance matching [skip ci]'
+          git commit -m 'fix: robust attendance report matching [skip ci]'
           git push

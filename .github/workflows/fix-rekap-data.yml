@@ -14,11 +14,12 @@ jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Patch admin attendance report loader
-        shell: python
+      - name: Repair admin attendance matching
         run: |
+          python3 <<'PY'
           from pathlib import Path
           import re
 
@@ -37,53 +38,34 @@ jobs:
             if (Array.isArray(data)) return data;
             if (Array.isArray(data?.items)) return data.items;
             if (Array.isArray(data?.students)) return data.students;
+            if (Array.isArray(data?.employees)) return data.employees;
             if (Array.isArray(data?.attendance)) return data.attendance;
             if (Array.isArray(data?.records)) return data.records;
             return [];
         };
 
-        const norm = (v) => String(v ?? '').trim();
-        const first = (...values) => values.find(v => norm(v) !== '');
+        const norm = (value) => String(value ?? '').trim();
+        const first = (...values) => values.find(value => norm(value) !== '');
 
         try {
-            const [studentResult, journalResult, leaveResult, izinResult, settingsResult] = await Promise.all([
-                api.getStudents(),
+            const [empResult, journalResult, leaveResult, izinResult, attResult, settingsResult] = await Promise.all([
+                api.getEmployees(),
                 api.getAllJournals(),
                 api.getAllLeaves(),
                 api.getAllIzin(),
+                api.getAllAttendance(),
                 api.getSettings()
             ]);
 
-            employees = asArray(studentResult).map((s, index) => ({
-                ...s,
-                id: first(s.id, s.userId, s.userID, s.studentId, s.studentID, s.nim, s.NIM, s.email) || `student-${index + 1}`,
-                name: first(s.name, s.nama, s.fullName, s['Nama']) || 'Mahasiswa',
-                department: first(s.department, s.departemen, s.prodi, s.programStudi, s['Departemen']) || '-'
-            }));
-
+            employees = asArray(empResult);
             jurnals = asArray(journalResult);
             leaves = asArray(leaveResult);
             izinList = asArray(izinResult);
+            attendances = asArray(attResult);
             this.settings = settingsResult?.data || {};
-
-            try {
-                const allAttendanceResult = await api.getAllAttendance();
-                attendances = asArray(allAttendanceResult);
-            } catch (e) {
-                console.warn('getAllAttendance gagal, memakai getAttendance per mahasiswa:', e);
-            }
-
-            if (!attendances.length && employees.length) {
-                const results = await Promise.allSettled(
-                    employees.map(student => api.getAttendance(student.id))
-                );
-                results.forEach(result => {
-                    if (result.status === 'fulfilled') attendances.push(...asArray(result.value));
-                });
-            }
         } catch (error) {
             console.error('Error loading report data:', error);
-            employees = storage.get('admin_students', storage.get('admin_employees', []));
+            employees = storage.get('admin_employees', []);
             jurnals = storage.get('jurnals', []);
             leaves = storage.get('leaves', []);
             izinList = storage.get('izin', []);
@@ -91,22 +73,37 @@ jobs:
             this.settings = {};
         }
 
+        // Normalize student records and build aliases for matching attendance.
+        employees = employees.map((emp, index) => ({
+            ...emp,
+            id: first(emp.id, emp.userId, emp.userID, emp.employeeId, emp.employeeID, emp.studentId, emp.studentID, emp.nim, emp.NIM, emp.email) || `student-${index + 1}`,
+            name: first(emp.name, emp.nama, emp.fullName, emp['Nama']) || 'Mahasiswa',
+            department: first(emp.department, emp.departemen, emp.prodi, emp.programStudi, emp['Departemen']) || '-'
+        }));
+
         const employeeByKey = new Map();
         employees.forEach(emp => {
-            [emp.id, emp.userId, emp.userID, emp.studentId, emp.studentID, emp.nim, emp.NIM, emp.email, emp.name, emp.nama]
-                .map(norm).filter(Boolean)
+            [emp.id, emp.userId, emp.userID, emp.employeeId, emp.employeeID, emp.studentId, emp.studentID, emp.nim, emp.NIM, emp.email, emp.name, emp.nama]
+                .map(norm)
+                .filter(Boolean)
                 .forEach(key => employeeByKey.set(key.toLowerCase(), emp));
         });
 
+        // Normalize every attendance record to the canonical employee id.
         attendances = attendances.map(a => {
             const rawKey = first(
-                a.userId, a.userID, a.userid, a.employeeId, a.employeeID, a.studentId, a.studentID,
-                a.nim, a.NIM, a.email, a.Email, a['User ID'], a['Student ID'], a['NIM'], a.nama, a.name
+                a.userId, a.userID, a.userid,
+                a.employeeId, a.employeeID,
+                a.studentId, a.studentID,
+                a.nim, a.NIM,
+                a.email, a.Email,
+                a['User ID'], a['Student ID'], a['NIM'],
+                a.nama, a.name
             );
-            const emp = employeeByKey.get(norm(rawKey).toLowerCase());
+            const employee = employeeByKey.get(norm(rawKey).toLowerCase());
             return {
                 ...a,
-                userId: emp?.id || rawKey || '',
+                userId: employee?.id || rawKey || '',
                 date: first(a.date, a.tanggal, a.Date, a.Tanggal),
                 clockIn: first(a.clockIn, a.clockin, a['Clock In'], a['Jam Masuk'], a.jamMasuk),
                 clockOut: first(a.clockOut, a.clockout, a['Clock Out'], a['Jam Keluar'], a.jamKeluar),
@@ -114,6 +111,7 @@ jobs:
             };
         });
 
+        // Remove exact duplicates.
         const seen = new Set();
         attendances = attendances.filter(a => {
             const key = [norm(a.userId), norm(a.date), norm(a.clockIn), norm(a.clockOut), norm(a.status)].join('|');
@@ -137,7 +135,7 @@ jobs:
                 if (a.clockIn) {
                     present++;
                     const status = norm(a.status).toLowerCase();
-                    if (['terlambat', 'late'].includes(status)) late++;
+                    if (status === 'terlambat' || status === 'late') late++;
                 }
             });
 
@@ -147,32 +145,55 @@ jobs:
             empLeaves.forEach(l => leaveDays += parseInt(l.duration, 10) || 1);
             empIzin.forEach(i => leaveDays += parseInt(i.duration, 10) || 1);
 
-            return { userId: emp.id, name: emp.name, department: emp.department, present, late, absent: leaveDays, total: present + leaveDays };
+            return {
+                userId: emp.id,
+                name: emp.name,
+                department: emp.department,
+                present,
+                late,
+                absent: leaveDays,
+                total: present + leaveDays
+            };
         });
 
         const currentUser = auth.getCurrentUser();
         this.jurnalData = jurnals.map(j => {
-            let emp = employees.find(e => norm(e.id) === norm(j.userId));
+            const journalKey = first(j.userId, j.userID, j.studentId, j.studentID, j.nim, j.NIM, j.email, j.name, j.nama);
+            let emp = employeeByKey.get(norm(journalKey).toLowerCase());
             if (!emp && currentUser) emp = { name: currentUser.name, department: currentUser.department || '-' };
             if (!emp) emp = { name: 'Mahasiswa', department: '-' };
             return {
-                date: j.date, name: emp.name, department: emp.department,
-                tasks: j.tasks || '-', achievements: j.achievements || '-',
-                obstacles: j.obstacles || '-', plan: j.plan || '-', photo: j.photo || null,
-                status: j.tasks ? 'filled' : 'empty', updatedAt: j.updatedAt
+                date: j.date,
+                name: emp.name,
+                department: emp.department,
+                tasks: j.tasks || '-',
+                achievements: j.achievements || '-',
+                obstacles: j.obstacles || '-',
+                plan: j.plan || '-',
+                photo: j.photo || null,
+                status: j.tasks ? 'filled' : 'empty',
+                updatedAt: j.updatedAt
             };
         });
 
         this.leaveData = [
             ...leaves.map(l => ({
-                name: l.name || l.nama || 'Mahasiswa', department: l.department || l.departemen || '-',
+                name: l.name || l.nama || 'Mahasiswa',
+                department: l.department || l.departemen || '-',
                 type: l.type === 'annual' ? 'Cuti' : (l.type || 'Cuti'),
                 dates: l.startDate === l.endDate ? l.startDate : `${l.startDate} - ${l.endDate}`,
-                duration: l.duration, reason: l.reason, status: l.status
+                duration: l.duration,
+                reason: l.reason,
+                status: l.status
             })),
             ...izinList.map(i => ({
-                name: i.name || i.nama || 'Mahasiswa', department: i.department || i.departemen || '-',
-                type: 'Izin', dates: i.date, duration: i.duration, reason: i.reason, status: i.status
+                name: i.name || i.nama || 'Mahasiswa',
+                department: i.department || i.departemen || '-',
+                type: 'Izin',
+                dates: i.date,
+                duration: i.duration,
+                reason: i.reason,
+                status: i.status
             }))
         ];
     },
@@ -181,16 +202,18 @@ jobs:
 
           pattern = r'    async loadData\(\) \{.*?\n    \},\n\n    populateEmployeeFilter\(\) \{'
           replacement = new_load + '    populateEmployeeFilter() {'
-          s2, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit(f'loadData block not found; replacements={n}')
+          s2, count = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'loadData block not found: {count}')
+
           p.write_text(s2)
-      - name: Commit patched report
-        shell: bash
+          PY
+
+      - name: Commit repair
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add js/admin-reports.js
           git diff --cached --quiet && exit 0
-          git commit -m 'fix: load real student attendance into admin report'
+          git commit -m 'fix: repair admin attendance matching [skip ci]'
           git push

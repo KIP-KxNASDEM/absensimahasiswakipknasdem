@@ -8,7 +8,7 @@ const adminReports = {
     jurnalData: [],
     leaveData: [],
     filters: {
-        attendance: { month: '', dept: '', status: '' },
+        attendance: { month: '', status: '' },
         jurnal: { month: '', employee: '', status: '' },
         leave: { month: '', type: '', status: '' }
     },
@@ -72,7 +72,6 @@ const adminReports = {
             leaves = leaveResult.data || [];
             izinList = izinResult.data || [];
             attendances = attResult.data || [];
-
             this.settings = settingsResult.data || {};
         } catch (error) {
             console.error('Error loading report data:', error);
@@ -91,7 +90,6 @@ const adminReports = {
         this.attendanceData = employees.map(emp => ({
             userId: emp.id,
             name: emp.name,
-            department: emp.department,
             present: 0,
             late: 0,
             absent: 0,
@@ -102,12 +100,8 @@ const adminReports = {
 
         this.jurnalData = jurnals.map(j => {
             let emp = employees.find(e => e.id === j.userId);
-            if (!emp && currentUser) {
-                emp = { name: currentUser.name };
-            }
-            if (!emp) {
-                emp = { name: 'Mahasiswa' };
-            }
+            if (!emp && currentUser) emp = { name: currentUser.name };
+            if (!emp) emp = { name: 'Mahasiswa' };
             return {
                 date: j.date,
                 name: emp.name,
@@ -135,9 +129,7 @@ const adminReports = {
     renderJurnalReports() {
         const tbody = document.getElementById('jurnal-reports-body');
         if (!tbody) return;
-
         const data = this.getFilteredJurnal();
-
         tbody.innerHTML = data.map(row => `
             <tr>
                 <td>${row.date}</td>
@@ -145,11 +137,7 @@ const adminReports = {
                 <td>${row.tasks.substring(0, 30)}${row.tasks.length > 30 ? '...' : ''}</td>
                 <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail">` : '<span>-</span>'}</td>
                 <td>${row.status === 'filled' ? 'Terisi' : 'Kosong'}</td>
-                <td>
-                    <button class="btn-action view" onclick="adminReports.viewJurnalDetail('${row.name}', '${row.date}')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </td>
+                <td><button class="btn-action view" onclick="adminReports.viewJurnalDetail('${row.name}', '${row.date}')"><i class="fas fa-eye"></i></button></td>
             </tr>
         `).join('');
     },
@@ -157,21 +145,7 @@ const adminReports = {
     viewJurnalDetail(name, date) {
         const jurnal = this.jurnalData.find(j => j.name === name && j.date === date);
         if (!jurnal) return;
-
-        const content = `
-            <div class="jurnal-detail-content">
-                <div class="detail-row">
-                    <label>Nama:</label>
-                    <p>${jurnal.name}</p>
-                </div>
-                <div class="detail-row">
-                    <label>Tanggal:</label>
-                    <p>${dateTime.formatDate(new Date(jurnal.date), 'long')}</p>
-                </div>
-            </div>
-        `;
-
-        modal.show('Detail Jurnal', content, [
+        modal.show('Detail Jurnal', `<div class="jurnal-detail-content"><div class="detail-row"><label>Nama:</label><p>${jurnal.name}</p></div><div class="detail-row"><label>Tanggal:</label><p>${dateTime.formatDate(new Date(jurnal.date), 'long')}</p></div></div>`, [
             { label: 'Tutup', class: 'btn-secondary', onClick: () => modal.close() }
         ]);
     }

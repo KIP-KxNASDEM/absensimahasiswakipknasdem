@@ -242,7 +242,7 @@ function initializeData() {
             name: 'Portal Mahasiswa',
             logo: ''
         });
-    } else if (String(company.name || '').trim().toLowerCase() === 'portal karyawan') {
+    } else if (String(company.name || '').trim().toLowerCase() === 'portal mahasiswa') {
         // Migrate only the retired default name; preserve custom names.
         storage.set('company', {
             ...company,

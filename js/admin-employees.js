@@ -9,7 +9,6 @@ const adminEmployees = {
     perPage: 10,
     filters: {
         search: '',
-        department: '',
         status: ''
     },
 
@@ -50,17 +49,6 @@ const adminEmployees = {
             });
         }
 
-        // Department filter
-        const deptFilter = document.getElementById('dept-filter');
-        if (deptFilter) {
-            deptFilter.addEventListener('change', (e) => {
-                this.filters.department = e.target.value;
-                this.currentPage = 1;
-                this.renderTable();
-                this.renderMobileCards();
-                this.updatePaginationInfo();
-            });
-        }
 
         // Status filter
         const statusFilter = document.getElementById('status-filter');
@@ -115,10 +103,9 @@ const adminEmployees = {
                 emp.email.toLowerCase().includes(this.filters.search) ||
                 emp.position.toLowerCase().includes(this.filters.search);
 
-            const matchesDept = !this.filters.department || emp.department === this.filters.department;
             const matchesStatus = !this.filters.status || emp.status === this.filters.status;
 
-            return matchesSearch && matchesDept && matchesStatus;
+            return matchesSearch && matchesStatus;
         });
     },
 
@@ -133,7 +120,7 @@ const adminEmployees = {
         if (paginated.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: var(--spacing-xl);">
+                    <td colspan="6" style="text-align: center; padding: var(--spacing-xl);">
                         Tidak ada data mahasiswa
                     </td>
                 </tr>
@@ -155,7 +142,6 @@ const adminEmployees = {
                     </div>
                 </td>
                 <td>EMP${String(emp.id).padStart(3, '0')}</td>
-                <td>${emp.department}</td>
                 <td>${emp.position}</td>
                 <td>${emp.shift}</td>
                 <td>
@@ -205,10 +191,6 @@ const adminEmployees = {
                 <div class="mobile-card-row">
                     <span class="mobile-card-label">ID</span>
                     <span class="mobile-card-value">EMP${String(emp.id).padStart(3, '0')}</span>
-                </div>
-                <div class="mobile-card-row">
-                    <span class="mobile-card-label">Departemen</span>
-                    <span class="mobile-card-value">${emp.department}</span>
                 </div>
                 <div class="mobile-card-row">
                     <span class="mobile-card-label">Jabatan</span>
@@ -355,31 +337,6 @@ const adminEmployees = {
         }
     },
 
-    updateDeptFilterOptions(newDept) {
-        // Update filter dropdown
-        const deptFilter = document.getElementById('dept-filter');
-        if (deptFilter) {
-            const existingOptions = Array.from(deptFilter.options).map(opt => opt.value);
-            if (!existingOptions.includes(newDept)) {
-                const option = document.createElement('option');
-                option.value = newDept;
-                option.textContent = newDept;
-                deptFilter.appendChild(option);
-            }
-        }
-
-        // Update datalist in modal
-        const deptList = document.getElementById('dept-list');
-        if (deptList) {
-            const existingOptions = Array.from(deptList.options).map(opt => opt.value);
-            if (!existingOptions.includes(newDept)) {
-                const option = document.createElement('option');
-                option.value = newDept;
-                deptList.appendChild(option);
-            }
-        }
-    },
-
     getRandomColor() {
         const colors = ['3B82F6', '10B981', 'F59E0B', 'EF4444', '8B5CF6', 'EC4899', '06B6D4'];
         return colors[Math.floor(Math.random() * colors.length)];
@@ -388,7 +345,7 @@ const adminEmployees = {
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id === id);
         if (emp) {
-            alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nDepartemen: ${emp.department}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
+            alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
         }
     },
 

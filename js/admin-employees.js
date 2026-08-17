@@ -318,18 +318,17 @@ const adminEmployees = {
 
         const name = document.getElementById('emp-name').value;
         const email = document.getElementById('emp-email').value;
-        const department = document.getElementById('emp-department').value;
         const position = document.getElementById('emp-position').value;
-        const shift = document.getElementById('emp-shift').value;
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
 
         const employeeData = {
             name,
             email,
-            department,
+            // Keep legacy data consumers stable without exposing these fields in the form.
+            department: '-',
             position,
-            shift,
+            shift: '-',
             status,
             joinDate,
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${this.getRandomColor()}&color=fff`
@@ -340,8 +339,6 @@ const adminEmployees = {
             if (result.success) {
                 this.employees.unshift(result.data);
 
-                // Update dept filter options if new department
-                this.updateDeptFilterOptions(department);
 
                 this.hideAddModal();
                 this.renderTable();

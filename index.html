@@ -1479,42 +1479,14 @@
                         <input type="text" id="emp-name" placeholder="Nama mahasiswa" required>
                     </div>
                     <div class="form-group">
-                        <label for="emp-email">Email</label>
-                        <input type="email" id="emp-email" placeholder="email@company.com" required>
+                        <label for="emp-email">Email Pribadi</label>
+                        <input type="email" id="emp-email" placeholder="nama@email.com" autocomplete="email" required>
                     </div>
                 </div>
                 <div class="form-row two-col">
-                    <div class="form-group">
-                        <label for="emp-department">Departemen</label>
-                        <input type="text" id="emp-department" list="dept-list"
-                            placeholder="Pilih atau ketik departemen" required>
-                        <datalist id="dept-list">
-                            <option value="IT">
-                            <option value="HR">
-                            <option value="Finance">
-                            <option value="Marketing">
-                            <option value="Operations">
-                            <option value="Sales">
-                            <option value="Legal">
-                            <option value="Customer Service">
-                            <option value="Research & Development">
-                            <option value="Quality Assurance">
-                        </datalist>
-                    </div>
                     <div class="form-group">
                         <label for="emp-position">Jabatan</label>
                         <input type="text" id="emp-position" placeholder="Jabatan" required>
-                    </div>
-                </div>
-                <div class="form-row two-col">
-                    <div class="form-group">
-                        <label for="emp-shift">Shift</label>
-                        <select id="emp-shift" required>
-                            <option value="">Pilih Shift</option>
-                            <option value="Pagi">Pagi (08:00-17:00)</option>
-                            <option value="Siang">Siang (14:00-23:00)</option>
-                            <option value="Malam">Malam (23:00-08:00)</option>
-                        </select>
                     </div>
                     <div class="form-group">
                         <label for="emp-status">Status</label>

@@ -361,7 +361,11 @@ const adminReports = {
         // ============================================
         const present = empAttendance.filter(a => {
             const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];
-            return !!clockIn;
+            const status = normalize(a.status ?? a.Status).toLowerCase();
+            const isLate = status === 'terlambat' || status === 'late';
+
+            // Hari terlambat dilaporkan terpisah, bukan sebagai hadir.
+            return !!clockIn && !isLate;
         }).length;
 
         // ============================================
@@ -507,18 +511,17 @@ const adminReports = {
         // HITUNG ABSEN
         // ============================================
         //
-        // Hari kerja berdasarkan jadwal
-        // dikurangi hadir dan cuti/izin.
-        //
-        let absent = Math.max(
+        // Hari aktif harus terpartisi sebagai hadir, terlambat, atau absen.
+        // Cuti/izin telah dikeluarkan dari hari aktif di sumber jadwal.
+        const absent = Math.max(
             0,
-            workDays - present - leaveDays
+            workDays - present - late
         );
 
         // ============================================
-        // TOTAL HARI KERJA
+        // TOTAL HARI AKTIF
         // ============================================
-        const total = present + absent;
+        const total = workDays;
 
         return {
             userId: employee.id,

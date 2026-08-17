@@ -236,10 +236,17 @@ const animations = {
 // Initialize default data
 function initializeData() {
     // Company settings
-    if (!storage.get('company')) {
+    const company = storage.get('company');
+    if (!company) {
         storage.set('company', {
             name: 'Portal Mahasiswa',
             logo: ''
+        });
+    } else if (String(company.name || '').trim().toLowerCase() === 'portal karyawan') {
+        // Migrate only the retired default name; preserve custom names.
+        storage.set('company', {
+            ...company,
+            name: 'Portal Mahasiswa'
         });
     }
 

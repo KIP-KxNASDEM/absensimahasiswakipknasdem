@@ -1,5 +1,4 @@
 /* Canonical attendance report fix: correct summary + complete daily detail. */
-(() => {
     
  (() => {
 

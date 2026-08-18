@@ -33,6 +33,13 @@ const adminReports = {
             return;
         }
 
+        const headerRow = document.querySelector('#jurnal-reports-table thead tr');
+        if (headerRow) {
+            Array.from(headerRow.children).forEach(th => {
+                if (th.textContent.trim().toLowerCase() === 'departemen') th.remove();
+            });
+        }
+
         await this.loadData();
         this.bindJurnalEvents();
         this.populateEmployeeFilter();

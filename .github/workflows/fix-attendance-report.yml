@@ -23,7 +23,8 @@ jobs:
           old = """            const empAtt = attendances.filter(a => String(a.userId) === String(emp.id));\n            let present = 0;\n            let late = 0;\n\n            empAtt.forEach(a => {\n                if (a.clockIn) {\n                    present++;\n                    if (a.status && a.status.toLowerCase() === 'terlambat') {\n                        late++;\n                    }\n                }\n            });"""
           new = """            const normalize = value => String(value ?? '').trim();\n            const empId = normalize(emp.id);\n\n            const empAtt = attendances.filter(a => {\n                const attendanceUserId = normalize(\n                    a.userId ?? a.userID ?? a.userid ?? a.employeeId ?? a.employeeID ?? a['User ID']\n                );\n                return attendanceUserId === empId;\n            });\n\n            let present = 0;\n            let late = 0;\n\n            empAtt.forEach(a => {\n                const clockIn = a.clockIn ?? a.clockin ?? a['Clock In'];\n                const status = normalize(a.status ?? a.Status);\n\n                if (clockIn) {\n                    present++;\n                    if (status.toLowerCase() === 'terlambat' || status.toLowerCase() === 'late') {\n                        late++;\n                    }\n                }\n            });"""
           if old not in s:
-              raise SystemExit('Target attendance block not found; no change made.')
+              print('Target attendance block not found; skip because already patched.')
+              raise SystemExit(0)
           p.write_text(s.replace(old, new, 1))
           PY
       - name: Commit patch

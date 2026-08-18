@@ -38,7 +38,6 @@ const adminDashboard = {
         this.renderRecentActivity();
         this.renderOnlineUsers();
     },
-
     async loadData() {
         try {
             const [empResult, attResult, leaveResult, izinResult] = await Promise.all([

@@ -9,12 +9,30 @@ const adminDashboard = {
     leaves: [],
 
     async init() {
-        if (!auth.isAdmin()) {
-            toast.error('Anda tidak memiliki akses!');
-            router.navigate('dashboard');
-            return;
-        }
 
+    const user = auth.getCurrentUser();
+
+    console.log("ADMIN CHECK USER:", user);
+
+    if (
+        !user ||
+        (
+            user.role !== 'admin' &&
+            user.role !== 'Admin' &&
+            user.userRole !== 'admin'
+        )
+    ) {
+        toast.error('Anda tidak memiliki akses!');
+        router.navigate('dashboard');
+        return;
+    }
+
+    await this.loadData();
+
+    this.updateStats();
+    this.renderRecentActivity();
+    this.renderOnlineUsers();
+},
         await this.loadData();
         this.updateStats();
         this.renderRecentActivity();

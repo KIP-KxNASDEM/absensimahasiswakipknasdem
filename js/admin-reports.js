@@ -3,8 +3,7 @@
     (() => {
 
 const adminReports = {};
-
-const normalize = v => ... String(v ?? '').trim().toLowerCase();
+const normalize = v => String(v ?? '').trim().toLowerCase();
     const arr = v => Array.isArray(v) ? v : (Array.isArray(v?.data) ? v.data : []);
     const val = (o, keys) => {
         for (const k of keys) {

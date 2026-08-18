@@ -398,7 +398,12 @@ const normalize = v => String(v ?? '').trim().toLowerCase();
             #attendance-detail-modal .attendance-detail-stats{grid-template-columns:repeat(2,1fr)}
         }
     `;
+    addStyle();
     document.head.appendChild(style);
+    window.adminReports = adminReports;
+
+})();
+     document.head.appendChild(style);
     window.adminReports = adminReports;
      
 })();

@@ -4,38 +4,42 @@
  */
 
 const adminDashboard = {
-    employees: [],
-    attendance: [],
-    leaves: [],
+    initialized: false,
 
     async init() {
-    if (this.initialized) return;
+        if (this.initialized) return;
 
-    const user = auth.getCurrentUser();
+        const user = auth.getCurrentUser();
 
-    console.log("ADMIN USER:", user);
+        console.log("ADMIN USER:", user);
 
-    if (
-        !user ||
-        (
-            user.role !== 'admin' &&
-            user.role !== 'Admin'
-        )
-    ) {
-        toast.error('Anda tidak memiliki akses!');
-        router.navigate('dashboard');
-        return;
-    }
+        if (!user || user.role !== 'admin') {
+            toast.error('Anda tidak memiliki akses!');
+            router.navigate('dashboard');
+            return;
+        }
 
+        try {
+            await this.loadData();
+
+            this.updateStats();
+
+            if (this.renderRecentActivity) {
+                this.renderRecentActivity();
+            }
+
+            if (this.renderOnlineUsers) {
+                this.renderOnlineUsers();
+            }
+
+            this.initialized = true;
+
+        } catch (error) {
+            console.error("Dashboard init error:", error);
+            toast.error("Gagal memuat dashboard");
+        }
+    },
     await this.loadData();
-
-    this.updateStats();
-    this.renderRecentActivity();
-    this.renderOnlineUsers();
-
-    this.initialized = true;
-},
-        await this.loadData();
         this.updateStats();
         this.renderRecentActivity();
         this.renderOnlineUsers();

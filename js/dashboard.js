@@ -32,8 +32,7 @@ const dashboard = {
                     currentUser.id ||
                     currentUser.uid ||
                     currentUser.userId ||
-                    currentUser.studentId ||
-                    currentUser.nim
+                    currentUser.studentId
                 )
             ) {
 
@@ -41,15 +40,13 @@ const dashboard = {
                     currentUser.id ||
                     currentUser.uid ||
                     currentUser.userId ||
-                    currentUser.studentId ||
-                    currentUser.nim;
+                    currentUser.studentId;
 
 
-                const [attResult, settingsRes] =
-                    await Promise.all([
-                        api.getAttendance(userId),
-                        api.getSettings()
-                    ]);
+                const [attResult, settingsRes] = await Promise.all([
+                    api.getAttendance(userId),
+                    api.getSettings()
+                ]);
 
 
                 this.attendanceData =
@@ -58,32 +55,26 @@ const dashboard = {
                     : [];
 
 
+                // Sync jadwal shift dari admin
                 if (
                     settingsRes &&
                     settingsRes.success &&
                     settingsRes.data
                 ) {
 
-                    const globalSettings =
-                        settingsRes.data;
-
+                    const globalSettings = settingsRes.data;
                     const loadedSchedules = {};
 
 
                     Object.keys(globalSettings).forEach(k => {
 
-                        if (
-                            k.startsWith(
-                                'shift_schedule_'
-                            )
-                        ) {
+                        if (k.startsWith('shift_schedule_')) {
 
                             const monthKey =
                                 k.replace(
                                     'shift_schedule_',
                                     ''
                                 );
-
 
                             try {
 
@@ -99,11 +90,9 @@ const dashboard = {
                     });
 
 
-                    if (
-                        Object.keys(
-                            loadedSchedules
-                        ).length > 0
-                    ) {
+                    if(
+                        Object.keys(loadedSchedules).length > 0
+                    ){
 
                         storage.set(
                             'shift_schedule',
@@ -130,12 +119,12 @@ const dashboard = {
     },
 
 
-    updateWelcomeCard(){
+    updateWelcomeCard() {
+
 
         const welcomeCard =
-            document.querySelector(
-                '.welcome-card'
-            );
+            document.querySelector('.welcome-card');
+
 
         const greetingEl =
             document.querySelector(
@@ -155,6 +144,7 @@ const dashboard = {
             );
 
 
+
         if(!welcomeCard || !greetingEl)
             return;
 
@@ -164,66 +154,44 @@ const dashboard = {
             new Date().getHours();
 
 
-        let greeting =
-            'Selamat Pagi';
 
-        let icon =
-            'fa-sun';
-
-        let className =
-            'morning';
+        let greeting = 'Selamat Pagi';
+        let icon = 'fa-sun';
+        let className = 'morning';
 
 
 
         if(hour >= 11 && hour < 15){
 
-            greeting =
-                'Selamat Siang';
-
-            icon =
-                'fa-sun';
-
-            className =
-                'afternoon';
+            greeting='Selamat Siang';
+            icon='fa-sun';
+            className='afternoon';
 
         }
-        else if(hour >= 15 && hour < 18){
+        else if(hour >=15 && hour <18){
 
-            greeting =
-                'Selamat Sore';
-
-            icon =
-                'fa-cloud-sun';
-
-            className =
-                'evening';
+            greeting='Selamat Sore';
+            icon='fa-cloud-sun';
+            className='evening';
 
         }
         else if(hour >=18){
 
-            greeting =
-                'Selamat Malam';
-
-            icon =
-                'fa-moon';
-
-            className =
-                'evening';
+            greeting='Selamat Malam';
+            icon='fa-moon';
+            className='evening';
 
         }
 
 
 
-        const currentUser =
+        const user =
             auth.getCurrentUser();
 
 
 
         const userName =
-            currentUser?.name
-            ?.split(' ')[0]
-            ||
-            'User';
+            user?.name?.split(' ')[0] || 'User';
 
 
 
@@ -240,61 +208,40 @@ const dashboard = {
         }
 
 
-
         welcomeCard.className =
             `welcome-card ${className}`;
 
 
 
-        const shifts =
-            storage.get(
-                'shifts',
-                []
-            );
-
-
         let currentShiftName =
-            currentUser?.shift
-            ||
-            'Pagi';
+            user?.shift || 'Pagi';
 
 
 
-        try{
+        try {
 
 
             const userId =
                 String(
-                    currentUser?.id ||
-                    currentUser?.uid ||
-                    currentUser?.userId ||
-                    currentUser?.studentId ||
-                    currentUser?.nim ||
+                    user?.id ||
+                    user?.uid ||
+                    user?.userId ||
+                    user?.studentId ||
+                    user?.nim ||
                     ''
                 );
 
 
 
-            const now =
-                new Date();
+            const now = new Date();
 
 
-
-            const currentYear =
-                now.getFullYear();
-
-
-            const currentMonth =
-                now.getMonth();
+            const key =
+                `${now.getFullYear()}-${now.getMonth()+1}`;
 
 
             const currentDay =
                 now.getDate();
-
-
-
-            const key =
-                `${currentYear}-${currentMonth}`;
 
 
 
@@ -322,8 +269,10 @@ const dashboard = {
                 schedules[key][userId]
             ){
 
+
                 const assignedShift =
                     schedules[key][userId][currentDay];
+
 
 
                 if(assignedShift){
@@ -336,9 +285,7 @@ const dashboard = {
             }
 
 
-
-        }
-        catch(e){
+        }catch(e){
 
             console.error(
                 'Error reading shift schedule:',
@@ -349,10 +296,16 @@ const dashboard = {
 
 
 
+        const shifts =
+            storage.get(
+                'shifts',
+                []
+            );
+
+
         const activeShift =
             shifts.find(
-                s =>
-                s.name === currentShiftName
+                s=>s.name===currentShiftName
             )
             ||
             shifts[0]
@@ -367,20 +320,27 @@ const dashboard = {
 
         if(shiftEl){
 
-            shiftEl.textContent =
+            if(currentShiftName==='Libur'){
+
+                shiftEl.textContent =
+                'Shift: Libur (Tidak ada jadwal)';
+
+            }
+            else{
+
+                shiftEl.textContent =
                 `Shift: ${activeShift.name} (${activeShift.startTime} - ${activeShift.endTime})`;
+
+            }
 
         }
 
-
     },
 
-
-    updateStats(){
+        updateStats(){
 
         const attendance =
-            this.attendanceData;
-
+            this.attendanceData || [];
 
 
         const total =
@@ -390,27 +350,21 @@ const dashboard = {
             );
 
 
-
         const present =
             attendance.filter(
-                a =>
-                a.status === 'ontime'
+                a=>a.status==='ontime'
             ).length;
-
 
 
         const late =
             attendance.filter(
-                a =>
-                a.status === 'late'
+                a=>a.status==='late'
             ).length;
-
 
 
         const absent =
             attendance.filter(
-                a =>
-                a.status === 'absent'
+                a=>a.status==='absent'
             ).length;
 
 
@@ -447,9 +401,7 @@ const dashboard = {
             );
 
 
-        if(
-            legendValues.length >= 3
-        ){
+        if(legendValues.length >= 3){
 
             legendValues[0].textContent =
                 `${present} hari`;
@@ -465,20 +417,23 @@ const dashboard = {
     },
 
 
+
     updateSessionInfo(){
+
 
         const today =
             dateTime.getLocalDate();
 
 
+
         const attendance =
-            this.attendanceData;
+            this.attendanceData || [];
+
 
 
         const todayAttendance =
             attendance.find(
-                a =>
-                a.date === today
+                a=>a.date===today
             );
 
 
@@ -515,41 +470,94 @@ const dashboard = {
 
 
 
+
         if(todayAttendance){
+
 
             if(clockInEl)
                 clockInEl.textContent =
                     todayAttendance.clockIn || '--:--';
 
 
+
             if(clockOutEl)
                 clockOutEl.textContent =
                     todayAttendance.clockOut || '--:--';
+
+
+
+
+            if(
+                todayAttendance.clockIn &&
+                todayAttendance.clockOut &&
+                durationEl
+            ){
+
+                durationEl.textContent =
+                    dateTime.calculateDuration(
+                        todayAttendance.clockIn,
+                        todayAttendance.clockOut
+                    );
+
+            }
 
         }
 
     },
 
 
+
     updateProgressBar(){
+
 
         const now =
             new Date();
 
 
+
+        const currentHour =
+            now.getHours();
+
+
+
+        const currentMinute =
+            now.getMinutes();
+
+
+
         const currentTime =
-            now.getHours()
-            +
-            (now.getMinutes()/60);
+            currentHour +
+            (currentMinute / 60);
 
 
 
-        const progress =
+        const startHour = 8;
+        const endHour = 17;
+
+
+
+        const totalHours =
+            endHour - startHour;
+
+
+
+        let progress =
+            (
+                (currentTime - startHour)
+                /
+                totalHours
+            )
+            *
+            100;
+
+
+
+        progress =
             Math.max(
                 0,
                 Math.min(
                     100,
-                    ((currentTime-8)/9)*100
+                    progress
                 )
             );
 
@@ -559,6 +567,7 @@ const dashboard = {
             document.getElementById(
                 'work-progress'
             );
+
 
 
         if(progressFill){
@@ -574,8 +583,10 @@ const dashboard = {
 
 
 
+// Global init router
+
 window.initDashboard =
-async () => {
+async function(){
 
     await dashboard.init();
 
@@ -583,18 +594,25 @@ async () => {
 
 
 
+// Auto update progress
+
 setInterval(()=>{
 
-    if(
+
+    const page =
         document.getElementById(
             'page-dashboard'
-        )?.classList.contains(
-            'active'
-        )
+        );
+
+
+    if(
+        page &&
+        page.classList.contains('active')
     ){
 
         dashboard.updateProgressBar();
 
     }
+
 
 },60000);

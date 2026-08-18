@@ -22,8 +22,7 @@ const dashboard = {
 
     async loadData() {
         try {
-            const currentUser = auth.getCurrentUser();
-            if (currentUser && currentUser.id) {
+            if (currentUser && (currentUser.id || currentUser.uid || currentUser.userId || currentUser.studentId)) {
                 // Fetch attendance and global settings concurrently
                 const [attResult, settingsRes] = await Promise.all([
                     api.getAttendance(currentUser.id),
@@ -98,14 +97,16 @@ const dashboard = {
 
         // Automated shift lookup from admin schedule
         try {
-            const userId = String(auth.getCurrentUser()?.id);
-            const schedules = storage.get('shift_schedule', {});
-            const todayObj = new Date();
-            const currentYear = todayObj.getFullYear();
-            const currentMonth = todayObj.getMonth();
-            const currentDay = todayObj.getDate();
-            const key = `${currentYear}-${currentMonth}`;
+            const currentUser = auth.getCurrentUser();
 
+const userId = String(
+    currentUser?.id ||
+    currentUser?.uid ||
+    currentUser?.userId ||
+    currentUser?.studentId ||
+    currentUser?.nim ||
+    ''
+);
             console.log('Dashboard Shift Sync - Key:', key, 'UserId:', userId, 'Day:', currentDay);
 
             if (schedules[key] && schedules[key][userId]) {

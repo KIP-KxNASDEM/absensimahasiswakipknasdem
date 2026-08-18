@@ -204,6 +204,38 @@ const normalize = v => String(v ?? '').trim().toLowerCase();
         }
     };
 
+     adminReports.bindAttendanceEvents = function () {
+    const month = document.getElementById('attendance-month');
+    const status = document.getElementById('attendance-status');
+
+    if (month) {
+        month.addEventListener('change', () => {
+            this.renderAttendanceReports();
+        });
+    }
+
+    if (status) {
+        status.addEventListener('change', () => {
+            this.renderAttendanceReports();
+        });
+    }
+};
+
+
+adminReports.populateEmployeeFilter = function () {
+    const select = document.getElementById('attendance-employee');
+
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Semua Mahasiswa</option>';
+
+    (this.rawEmployees || []).forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.id || emp.uid || '';
+        option.textContent = emp.name || emp.nama || '-';
+        select.appendChild(option);
+    });
+};
     adminReports.getFilteredAttendance = function () {
         const month = this.filters?.attendance?.month || document.getElementById('attendance-month')?.value || '';
         const sf = this.filters?.attendance?.status || '';

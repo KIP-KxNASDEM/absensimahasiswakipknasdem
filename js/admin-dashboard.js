@@ -9,17 +9,17 @@ const adminDashboard = {
     leaves: [],
 
     async init() {
+    if (this.initialized) return;
 
     const user = auth.getCurrentUser();
 
-    console.log("ADMIN CHECK USER:", user);
+    console.log("ADMIN USER:", user);
 
     if (
         !user ||
         (
             user.role !== 'admin' &&
-            user.role !== 'Admin' &&
-            user.userRole !== 'admin'
+            user.role !== 'Admin'
         )
     ) {
         toast.error('Anda tidak memiliki akses!');
@@ -32,6 +32,8 @@ const adminDashboard = {
     this.updateStats();
     this.renderRecentActivity();
     this.renderOnlineUsers();
+
+    this.initialized = true;
 },
         await this.loadData();
         this.updateStats();

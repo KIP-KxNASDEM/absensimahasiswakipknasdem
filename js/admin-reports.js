@@ -152,7 +152,16 @@ const adminReports = {
     viewJurnalDetail(name, date) {
         const jurnal = this.jurnalData.find(j => j.name === name && j.date === date);
         if (!jurnal) return;
-        modal.show('Detail Jurnal', `<div class="jurnal-detail-content"><div class="detail-row"><label>Nama:</label><p>${jurnal.name}</p></div><div class="detail-row"><label>Tanggal:</label><p>${dateTime.formatDate(new Date(jurnal.date), 'long')}</p></div></div>`, [
+        const photoHtml = jurnal.photo ? `<div class="detail-row"><label>Foto:</label><p><img src="${jurnal.photo}" class="jurnal-thumbnail"></p></div>` : '';
+        modal.show('Detail Jurnal', `<div class="jurnal-detail-content">
+            <div class="detail-row"><label>Nama:</label><p>${jurnal.name}</p></div>
+            <div class="detail-row"><label>Tanggal:</label><p>${dateTime.formatDate(new Date(jurnal.date), 'long')}</p></div>
+            <div class="detail-row"><label>Tugas:</label><p>${jurnal.tasks}</p></div>
+            <div class="detail-row"><label>Pencapaian:</label><p>${jurnal.achievements}</p></div>
+            <div class="detail-row"><label>Kendala:</label><p>${jurnal.obstacles}</p></div>
+            <div class="detail-row"><label>Rencana:</label><p>${jurnal.plan}</p></div>
+            ${photoHtml}
+        </div>`, [
             { label: 'Tutup', class: 'btn-secondary', onClick: () => modal.close() }
         ]);
     }

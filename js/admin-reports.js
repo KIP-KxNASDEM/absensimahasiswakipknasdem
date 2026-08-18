@@ -400,4 +400,3 @@ const normalize = v => String(v ?? '').trim().toLowerCase();
     `;
     document.head.appendChild(style);
     window.adminReports = adminReports;
-})();

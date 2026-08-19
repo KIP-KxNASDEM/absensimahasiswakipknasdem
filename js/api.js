@@ -17,52 +17,68 @@ const api = {
 
     async request(action, data = {}) {
 
-        // Jika API_BASE_URL kosong,
-        // gunakan localStorage fallback
-        if (!API_BASE_URL) {
-            return this._localFallback(action, data);
-        }
+    if (!action) {
+        console.error("API ERROR: action kosong", data);
+        return {
+            success: false,
+            error: "Action tidak boleh kosong"
+        };
+    }
+
+    if (!API_BASE_URL) {
+        return this._localFallback(action, data);
+    }
+
+    try {
+
+        console.log("API REQUEST:", {
+            action,
+            data
+        });
+
+        const response = await fetch(API_BASE_URL, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+            body: JSON.stringify({
+                action: action,
+                ...data
+            })
+        });
+
+        const text = await response.text();
+
+        console.log("API RESPONSE:", text);
 
         try {
+            return JSON.parse(text);
 
-            const response = await fetch(API_BASE_URL, {
-                method: 'POST',
-                redirect: 'follow',
-                headers: {
-                    'Content-Type': 'text/plain'
-                },
-                body: JSON.stringify({
-                    action,
-                    ...data
-                })
-            });
+        } catch (e) {
 
-            const text = await response.text();
+            console.error(
+                'Failed parse response:',
+                text.substring(0,200)
+            );
 
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-
-                console.error(
-                    'Failed to parse response:',
-                    text.substring(0, 200)
-                );
-
-                return {
-                    success: false,
-                    error: 'Invalid response from server'
-                };
-            }
-
-        } catch (error) {
-
-            console.error('API Error:', error);
-
-            // Fallback ke localStorage
-            return this._localFallback(action, data);
+            return {
+                success:false,
+                error:'Invalid response from server'
+            };
         }
-    },
 
+
+    } catch(error){
+
+        console.error(
+            'API Error:',
+            error
+        );
+
+        return this._localFallback(action,data);
+    }
+},
 
     // ==================================================
     // AUTH

@@ -57,6 +57,8 @@ const api = {
 
         } catch (e) {
 
+            console.log("API URL:", url);
+            console.log("RAW RESPONSE:", text);
             console.error(
                 'Failed parse response:',
                 text.substring(0,200)

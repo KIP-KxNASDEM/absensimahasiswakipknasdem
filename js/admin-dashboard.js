@@ -60,6 +60,7 @@ const adminDashboard = {
                 this.updateStats();
         } catch (error) {
             console.error('Error loading admin data:', error);
+            
             this.employees = storage.get('admin_employees', []);
             this.attendance = storage.get('attendance', []);
             this.leaves = storage.get('leaves', []);

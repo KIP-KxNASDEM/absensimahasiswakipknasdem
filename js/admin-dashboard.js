@@ -29,7 +29,7 @@ const adminDashboard = {
             if (this.renderRecentActivity) {
                 this.renderRecentActivity();
             }
-
+        
             if (this.renderOnlineUsers) {
                 this.renderOnlineUsers();
             }
@@ -44,16 +44,20 @@ const adminDashboard = {
     
     async loadData() {
         try {
-            const [studentResult, attResult, leaveResult, izinResult] = await Promise.all([
-                api.getStudents(),
-                api.getAllAttendance(),
-                api.getAllLeaves(),
-                api.getAllIzin()
-            ]);
-            this.employees = studentResult.data || [];
-            this.attendance = attResult.data || [];
-            this.leaves = leaveResult.data || [];
-            this.izin = izinResult.data || [];
+            const studentResult = await api.getStudents();
+                this.employees = studentResult.data || [];
+                requestAnimationFrame(() => {
+                        this.updateStats();
+});
+                const [attResult, leaveResult, izinResult] = await Promise.all([
+                        api.getAllAttendance(),
+                        api.getAllLeaves(),
+                        api.getAllIzin()
+]);
+                this.attendance = attResult.data || [];
+                this.leaves = leaveResult.data || [];
+                this.izin = izinResult.data || [];
+                this.updateStats();
         } catch (error) {
             console.error('Error loading admin data:', error);
             this.employees = storage.get('admin_employees', []);

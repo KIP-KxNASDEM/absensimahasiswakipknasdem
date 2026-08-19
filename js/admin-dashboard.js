@@ -9,7 +9,7 @@ const adminDashboard = {
     async init() {
         if (this.initialized) return;
 
-        const user = auth.getCurrentUser();
+        const user = await auth.getCurrentUser();
 
         console.log("ADMIN USER:", user);
 

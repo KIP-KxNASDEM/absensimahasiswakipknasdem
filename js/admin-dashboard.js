@@ -39,7 +39,7 @@ const adminDashboard = {
             toast.error("Gagal memuat dashboard");
         }
     },
-    },
+    
     async loadData() {
         try {
             const [empResult, attResult, leaveResult, izinResult] = await Promise.all([

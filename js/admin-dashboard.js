@@ -44,13 +44,13 @@ const adminDashboard = {
     
     async loadData() {
         try {
-            const [empResult, attResult, leaveResult, izinResult] = await Promise.all([
-                api.getEmployees(),
+            const [studentResult, attResult, leaveResult, izinResult] = await Promise.all([
+                api.getStudents(),
                 api.getAllAttendance(),
                 api.getAllLeaves(),
                 api.getAllIzin()
             ]);
-            this.employees = empResult.data || [];
+            this.employees = studentResult.data || [];
             this.attendance = attResult.data || [];
             this.leaves = leaveResult.data || [];
             this.izin = izinResult.data || [];

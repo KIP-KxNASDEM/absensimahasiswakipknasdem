@@ -9,7 +9,9 @@ const adminDashboard = {
     async init() {
         if (this.initialized) return;
 
-        const user = await auth.getCurrentUser();
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const user = auth.getCurrentUser();
 
         console.log("ADMIN USER:", user);
 

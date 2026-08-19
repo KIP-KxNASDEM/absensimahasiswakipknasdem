@@ -39,10 +39,6 @@ const adminDashboard = {
             toast.error("Gagal memuat dashboard");
         }
     },
-    await this.loadData();
-        this.updateStats();
-        this.renderRecentActivity();
-        this.renderOnlineUsers();
     },
     async loadData() {
         try {

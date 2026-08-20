@@ -23,7 +23,6 @@ const mobile = {
     },
     
     handleResize() {
-        const wasMobile = this.isMobile;
         this.checkMobile();
         
         // Toggle mobile menu button visibility
@@ -34,12 +33,24 @@ const mobile = {
         
         // Toggle sidebar behavior
         const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
         if (sidebar) {
             if (this.isMobile) {
-                sidebar.classList.remove('open');
-                this.sidebarOpen = false;
+                // Jangan tutup sidebar jika sedang terbuka.
+                // Perubahan overflow/layout dapat memicu resize di mobile.
+                if (this.sidebarOpen) {
+                    sidebar.classList.add('open');
+                    overlay?.classList.add('show');
+                } else {
+                    sidebar.classList.remove('open');
+                    overlay?.classList.remove('show');
+                }
             } else {
+                sidebar.classList.remove('open');
+                overlay?.classList.remove('show');
                 sidebar.style.transform = '';
+                this.sidebarOpen = false;
+                document.body.style.overflow = '';
             }
         }
         

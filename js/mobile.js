@@ -9,6 +9,7 @@ const mobile = {
     
     init() {
         this.checkMobile();
+        this.injectSidebarFixStyles();
         this.initSidebar();
         this.initBottomNav();
         this.handleResize();
@@ -20,6 +21,56 @@ const mobile = {
     checkMobile() {
         this.isMobile = window.innerWidth <= 768;
         return this.isMobile;
+    },
+
+    // Hard override for mobile sidebar layering.
+    // This is injected after all CSS files so later styles cannot hide the sidebar.
+    injectSidebarFixStyles() {
+        if (document.getElementById('mobile-sidebar-fix')) return;
+
+        const style = document.createElement('style');
+        style.id = 'mobile-sidebar-fix';
+        style.textContent = `
+            @media (max-width: 768px) {
+                #app-container .sidebar {
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    width: 280px !important;
+                    height: 100vh !important;
+                    max-height: 100vh !important;
+                    display: flex !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    z-index: 2147483647 !important;
+                    transition: transform 0.3s ease !important;
+                    transform: translate3d(-100%, 0, 0) !important;
+                    pointer-events: none !important;
+                }
+
+                #app-container .sidebar.open {
+                    display: flex !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    z-index: 2147483647 !important;
+                    transform: translate3d(0, 0, 0) !important;
+                    pointer-events: auto !important;
+                }
+
+                #app-container .sidebar-overlay {
+                    position: fixed !important;
+                    inset: 0 !important;
+                    z-index: 2147483646 !important;
+                }
+
+                #app-container .sidebar-overlay.show {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
     },
     
     handleResize() {
@@ -37,18 +88,24 @@ const mobile = {
         if (sidebar) {
             if (this.isMobile) {
                 // Jangan tutup sidebar jika sedang terbuka.
-                // Perubahan overflow/layout dapat memicu resize di mobile.
                 if (this.sidebarOpen) {
                     sidebar.classList.add('open');
                     overlay?.classList.add('show');
+                    sidebar.style.setProperty('transform', 'translate3d(0, 0, 0)', 'important');
+                    sidebar.style.setProperty('z-index', '2147483647', 'important');
+                    sidebar.style.setProperty('pointer-events', 'auto', 'important');
                 } else {
                     sidebar.classList.remove('open');
                     overlay?.classList.remove('show');
+                    sidebar.style.setProperty('transform', 'translate3d(-100%, 0, 0)', 'important');
+                    sidebar.style.setProperty('pointer-events', 'none', 'important');
                 }
             } else {
                 sidebar.classList.remove('open');
                 overlay?.classList.remove('show');
-                sidebar.style.transform = '';
+                sidebar.style.removeProperty('transform');
+                sidebar.style.removeProperty('z-index');
+                sidebar.style.removeProperty('pointer-events');
                 this.sidebarOpen = false;
                 document.body.style.overflow = '';
             }
@@ -126,11 +183,16 @@ const mobile = {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         
+        if (!sidebar) return;
+
         this.sidebarOpen = !this.sidebarOpen;
         
         if (this.sidebarOpen) {
-            sidebar?.classList.add('open');
+            sidebar.classList.add('open');
             overlay?.classList.add('show');
+            sidebar.style.setProperty('transform', 'translate3d(0, 0, 0)', 'important');
+            sidebar.style.setProperty('z-index', '2147483647', 'important');
+            sidebar.style.setProperty('pointer-events', 'auto', 'important');
             document.body.style.overflow = 'hidden';
         } else {
             this.closeSidebar();
@@ -144,6 +206,8 @@ const mobile = {
         this.sidebarOpen = false;
         sidebar?.classList.remove('open');
         overlay?.classList.remove('show');
+        sidebar?.style.setProperty('transform', 'translate3d(-100%, 0, 0)', 'important');
+        sidebar?.style.setProperty('pointer-events', 'none', 'important');
         document.body.style.overflow = '';
     },
     

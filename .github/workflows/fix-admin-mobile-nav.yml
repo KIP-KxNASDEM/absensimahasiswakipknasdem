@@ -1,0 +1,36 @@
+name: Fix Admin Mobile Bottom Navigation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-admin-mobile-nav.yml'
+      - 'css/mobile.css'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hide bottom navigation for admin
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('css/mobile.css')
+          s = p.read_text()
+          marker = '/* ADMIN MOBILE NAV FIX */'
+          if marker not in s:
+              s += '''\n\n/* ADMIN MOBILE NAV FIX */\n@media (max-width: 768px) {\n    body:has(#admin-menu-nav:not(.hidden)) #bottom-nav {\n        display: none !important;\n    }\n}\n'''
+              p.write_text(s)
+      - name: Commit CSS fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add css/mobile.css
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: hide admin mobile bottom navigation [skip ci]'
+          git push

@@ -123,6 +123,12 @@ const auth = {
 
     handleLogout() {
         if (confirm('Apakah Anda yakin ingin logout?')) {
+            // Mobile sidebar is mounted directly under <body>, so hiding
+            // #app-container alone does not hide it. Always close it first.
+            if (window.mobile) {
+                window.mobile.closeSidebar();
+            }
+
             this.currentUser = null;
             storage.remove('session');
             storage.remove('currentPage');

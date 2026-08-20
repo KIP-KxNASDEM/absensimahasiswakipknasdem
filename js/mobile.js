@@ -85,6 +85,36 @@ const mobile = {
         });
     },
 
+    initBottomNav() {
+        const bottomNav = document.getElementById('bottom-nav');
+        if (!bottomNav) return;
+
+        // Use delegation because the bottom navigation can be rendered/updated
+        // after mobile.js initializes. Each item only needs data-page="...".
+        bottomNav.addEventListener('click', (e) => {
+            const item = e.target instanceof Element
+                ? e.target.closest('.bottom-nav-item')
+                : null;
+
+            if (!item || !bottomNav.contains(item)) return;
+
+            const page = item.dataset.page;
+            if (!page || !window.router) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Navigate through the SPA router so the actual page changes,
+            // browser history is updated, and the active icon is refreshed.
+            window.router.navigate(page);
+        });
+
+        // Make the active state match the current route on initial load.
+        if (window.router?.currentPage) {
+            this.updateBottomNav(window.router.currentPage);
+        }
+    },
+
     mountSidebarToBody() {
         const sidebar = document.getElementById('sidebar');
         if (!sidebar || sidebar.parentElement === document.body) return;

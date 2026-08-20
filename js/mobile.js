@@ -8,11 +8,13 @@ const mobile = {
     sidebarOpen: false,
     _sidebarHome: null,
     _sidebarNextSibling: null,
+    _adminNavObserver: null,
 
     init() {
         this.checkMobile();
         this.initSidebar();
         this.initBottomNav();
+        this.initAdminBottomNavGuard();
         this.handleResize();
         window.addEventListener('resize', () => this.handleResize());
         window.addEventListener('orientationchange', () => setTimeout(() => this.handleResize(), 50));
@@ -21,6 +23,64 @@ const mobile = {
     checkMobile() {
         this.isMobile = window.innerWidth <= 768 || (window.innerWidth <= 1024 && window.innerHeight <= 600);
         return this.isMobile;
+    },
+
+    isAdminUser() {
+        const user = window.auth?.currentUser || window.storage?.get('session');
+        return user?.role === 'admin';
+    },
+
+    isAdminView() {
+        // Primary source: authenticated user's role.
+        if (this.isAdminUser()) return true;
+
+        // Fallback: auth.js explicitly shows this menu only for administrators.
+        const adminMenu = document.getElementById('admin-menu-nav');
+        const employeeMenu = document.getElementById('employee-menu');
+        if (adminMenu && !adminMenu.classList.contains('hidden')) return true;
+        if (employeeMenu && !employeeMenu.classList.contains('hidden')) return false;
+
+        // Final fallback for SPA route changes.
+        const currentPage = window.router?.currentPage || window.storage?.get('currentPage');
+        return currentPage === 'admin-dashboard' || currentPage?.startsWith('admin-');
+    },
+
+    syncAdminBottomNav() {
+        const bottomNav = document.getElementById('bottom-nav');
+        if (!bottomNav) return;
+
+        if (this.isAdminView()) {
+            bottomNav.style.setProperty('display', 'none', 'important');
+            bottomNav.setAttribute('data-admin-hidden', 'true');
+        } else if (this.isMobile) {
+            bottomNav.style.setProperty('display', 'flex', 'important');
+            bottomNav.removeAttribute('data-admin-hidden');
+        } else {
+            bottomNav.style.setProperty('display', 'none', 'important');
+            bottomNav.removeAttribute('data-admin-hidden');
+        }
+    },
+
+    initAdminBottomNavGuard() {
+        // The SPA can replace/update menu and page DOM after mobile.js starts.
+        // Re-check whenever the admin/employee navigation changes.
+        if (this._adminNavObserver) this._adminNavObserver.disconnect();
+
+        this._adminNavObserver = new MutationObserver(() => {
+            this.syncAdminBottomNav();
+        });
+
+        this._adminNavObserver.observe(document.body, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['class', 'style', 'data-page']
+        });
+
+        // Also cover auth/router changes that happen without a DOM mutation.
+        setTimeout(() => this.syncAdminBottomNav(), 0);
+        setTimeout(() => this.syncAdminBottomNav(), 300);
+        setTimeout(() => this.syncAdminBottomNav(), 1000);
     },
 
     handleResize() {
@@ -43,10 +103,7 @@ const mobile = {
             document.body.style.overflow = '';
         }
 
-        const bottomNav = document.getElementById('bottom-nav');
-        const session = window.auth?.currentUser || window.storage?.get('session');
-        const isAdmin = session?.role === 'admin';
-        if (bottomNav) bottomNav.style.display = this.isMobile && !isAdmin ? 'flex' : 'none';
+        this.syncAdminBottomNav();
         this.updateTableViews();
     },
 
@@ -215,6 +272,7 @@ const mobile = {
         const bottomNav = document.getElementById('bottom-nav');
         if (!bottomNav) return;
         bottomNav.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.toggle('active', item.dataset.page === page));
+        this.syncAdminBottomNav();
     }
 };
 

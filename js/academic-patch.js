@@ -5,7 +5,6 @@
 (() => {
     let students = [];
     let loaded = false;
-
     const norm = v => String(v ?? '').trim().toLowerCase();
     const campusOf = s => s?.kampus || s?.campus || '-';
     const prodiOf = s => s?.prodi || s?.jurusan || s?.programStudi || '-';
@@ -14,8 +13,7 @@
     const samePerson = (student, row) => {
         const keys = ['id','userId','userID','studentId','studentID','employeeId','employeeID','nim','NIM','email','Email'];
         for (const key of keys) {
-            const a = norm(student?.[key]);
-            const b = norm(row?.[key]);
+            const a = norm(student?.[key]), b = norm(row?.[key]);
             if (a && b && a === b) return true;
         }
         return norm(nameOf(student)) && norm(nameOf(student)) === norm(nameOf(row));
@@ -39,13 +37,8 @@
         return students.find(s => norm(nameOf(s)) === target) || null;
     }
 
-    function escapeHtml(value) {
-        return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-    }
-
     function patchPageTitle() {
-        const nodes = document.querySelectorAll('*');
-        nodes.forEach(el => {
+        document.querySelectorAll('*').forEach(el => {
             if (el.children.length === 0 && norm(el.textContent) === 'distribusi kehadiran per departemen') {
                 el.textContent = 'Distribusi Kehadiran per Kampus';
             }
@@ -59,8 +52,7 @@
         const body = document.getElementById('attendance-reports-body');
         if (!header || !body) return;
 
-        const labels = [...header.children].map(x => norm(x.textContent));
-        if (!labels.includes('kampus')) {
+        if (![...header.children].some(x => norm(x.textContent) === 'kampus')) {
             const nameCell = header.children[0];
             if (nameCell) {
                 const campus = document.createElement('th');
@@ -72,16 +64,13 @@
         }
 
         [...body.querySelectorAll('tr')].forEach(row => {
-            if (row.dataset.academicPatched === '1') return;
-            const cells = row.children;
-            if (!cells.length) return;
-            const name = cells[0].textContent.trim();
-            const student = findStudentByName(name);
+            if (row.children.length < 2 || row.dataset.academicPatched === '1') return;
+            const student = findStudentByName(row.children[0].textContent.trim());
             const campusCell = document.createElement('td');
             const prodiCell = document.createElement('td');
             campusCell.textContent = campusOf(student);
             prodiCell.textContent = prodiOf(student);
-            cells[0].after(campusCell, prodiCell);
+            row.children[0].after(campusCell, prodiCell);
             row.dataset.academicPatched = '1';
         });
     }
@@ -93,74 +82,80 @@
         const body = table.querySelector('tbody');
         if (!header || !body) return;
 
-        let departmentIndex = [...header.children].findIndex(th => norm(th.textContent) === 'departemen');
-        if (departmentIndex >= 0) {
+        let campusIndex = [...header.children].findIndex(th => norm(th.textContent) === 'kampus');
+        const departmentIndex = [...header.children].findIndex(th => norm(th.textContent) === 'departemen');
+        if (campusIndex < 0 && departmentIndex >= 0) {
             header.children[departmentIndex].textContent = 'Kampus';
-            if (!header.querySelector('[data-prodi-header]')) {
-                const th = document.createElement('th');
-                th.textContent = 'Prodi / Jurusan';
-                th.dataset.prodiHeader = '1';
-                header.children[departmentIndex].after(th);
-            }
+            campusIndex = departmentIndex;
         }
+        if (campusIndex >= 0 && !header.querySelector('[data-prodi-header]')) {
+            const th = document.createElement('th');
+            th.textContent = 'Prodi / Jurusan';
+            th.dataset.prodiHeader = '1';
+            header.children[campusIndex].after(th);
+        }
+        campusIndex = [...header.children].findIndex(th => norm(th.textContent) === 'kampus');
+        if (campusIndex < 0) return;
 
         [...body.querySelectorAll('tr')].forEach(row => {
-            if (row.dataset.academicPatched === '1') return;
-            const cells = row.children;
-            if (!cells.length) return;
-            const name = cells[0].textContent.trim();
-            const student = findStudentByName(name);
-            if (departmentIndex >= 0 && cells[departmentIndex]) {
-                cells[departmentIndex].textContent = campusOf(student);
-                const prodi = document.createElement('td');
-                prodi.textContent = prodiOf(student);
-                cells[departmentIndex].after(prodi);
-            }
+            if (row.children.length <= campusIndex || row.dataset.academicPatched === '1') return;
+            const student = findStudentByName(row.children[0].textContent.trim());
+            row.children[campusIndex].textContent = campusOf(student);
+            const prodi = document.createElement('td');
+            prodi.textContent = prodiOf(student);
+            row.children[campusIndex].after(prodi);
             row.dataset.academicPatched = '1';
         });
     }
 
+    function uniqueValues(field) {
+        return [...new Set(students.map(field).filter(x => x && x !== '-'))].sort((a,b) => String(a).localeCompare(String(b)));
+    }
+
+    function addSelectFilter(container, key, label, values, tableId) {
+        if (container.querySelector(`[data-academic-filter="${tableId}-${key}"]`)) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'filter-group';
+        wrapper.dataset.academicFilter = `${tableId}-${key}`;
+        wrapper.innerHTML = `<label>${label}</label><select><option value="">Semua ${label}</option></select>`;
+        const select = wrapper.querySelector('select');
+        values.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+        });
+        container.appendChild(wrapper);
+        select.addEventListener('change', () => applyReportFilters(tableId));
+    }
+
     function patchFilters() {
-        const pages = [
+        [
             {table:'attendance-reports-table', anchor:'attendance-month'},
             {table:'jurnal-reports-table', anchor:'jurnal-month'},
             {table:'leave-reports-table', anchor:'leave-month'}
-        ];
-        pages.forEach(({table, anchor}) => {
-            const target = document.getElementById(table);
+        ].forEach(({table,anchor}) => {
             const anchorInput = document.getElementById(anchor);
-            if (!target || !anchorInput) return;
-            const filterContainer = anchorInput.closest('.reports-filters');
-            if (!filterContainer || filterContainer.querySelector(`[data-academic-filter="${table}"]`)) return;
-
-            const wrapper = document.createElement('div');
-            wrapper.className = 'filter-group';
-            wrapper.dataset.academicFilter = table;
-            wrapper.innerHTML = `<label>Kampus</label><select class="academic-campus-filter"><option value="">Semua Kampus</option></select>`;
-            filterContainer.appendChild(wrapper);
-
-            const select = wrapper.querySelector('select');
-            [...new Set(students.map(campusOf).filter(x => x && x !== '-'))].sort().forEach(campus => {
-                const option = document.createElement('option');
-                option.value = campus;
-                option.textContent = campus;
-                select.appendChild(option);
-            });
-
-            select.addEventListener('change', () => applyReportFilter(table, select.value));
+            if (!document.getElementById(table) || !anchorInput) return;
+            const container = anchorInput.closest('.reports-filters');
+            if (!container) return;
+            addSelectFilter(container, 'campus', 'Kampus', uniqueValues(campusOf), table);
+            addSelectFilter(container, 'prodi', 'Prodi / Jurusan', uniqueValues(prodiOf), table);
         });
     }
 
-    function applyReportFilter(tableId, campus) {
+    function applyReportFilters(tableId) {
         const table = document.getElementById(tableId);
         if (!table) return;
+        const filterContainer = table.closest('.page')?.querySelector('.reports-filters');
+        const campus = filterContainer?.querySelector(`[data-academic-filter="${tableId}-campus"] select`)?.value || '';
+        const prodi = filterContainer?.querySelector(`[data-academic-filter="${tableId}-prodi"] select`)?.value || '';
         const body = table.querySelector('tbody');
         if (!body) return;
         [...body.querySelectorAll('tr')].forEach(row => {
-            if (row.dataset.emptyRow === '1') return;
-            const name = row.children[0]?.textContent.trim() || '';
-            const student = findStudentByName(name);
-            row.style.display = !campus || campusOf(student) === campus ? '' : 'none';
+            if (!row.children.length) return;
+            const student = findStudentByName(row.children[0].textContent.trim());
+            row.style.display = (!campus || campusOf(student) === campus) && (!prodi || prodiOf(student) === prodi) ? '' : 'none';
         });
     }
 
@@ -183,7 +178,6 @@
         observer.observe(document.body, {childList:true, subtree:true});
         patchAll();
     }
-
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();
 })();

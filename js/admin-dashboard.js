@@ -29,7 +29,7 @@ const adminDashboard = {
             if (this.renderRecentActivity) {
                 this.renderRecentActivity();
             }
-        
+
             if (this.renderOnlineUsers) {
                 this.renderOnlineUsers();
             }
@@ -41,71 +41,62 @@ const adminDashboard = {
             toast.error("Gagal memuat dashboard");
         }
     },
-    
+
     async loadData() {
-    try {
+        try {
+            const [studentResult, attResult, leaveResult, izinResult] = await Promise.all([
+                api.getStudents(),
+                api.getAllAttendance(),
+                api.getAllLeaves(),
+                api.getAllIzin()
+            ]);
 
-        const [studentResult, attResult, leaveResult, izinResult] = await Promise.all([
-            api.getStudents(),
-            api.getAllAttendance(),
-            api.getAllLeaves(),
-            api.getAllIzin()
-        ]);
+            this.employees = studentResult.data || [];
+            this.attendance = attResult.data || [];
+            this.leaves = leaveResult.data || [];
+            this.izin = izinResult.data || [];
 
-        this.employees = studentResult.data || [];
-        this.attendance = attResult.data || [];
-        this.leaves = leaveResult.data || [];
-        this.izin = izinResult.data || [];
+            this.updateStats();
 
-        this.updateStats();
+        } catch (error) {
+            console.error('Error loading admin data:', error);
 
-    } catch (error) {
+            this.employees = storage.get('admin_employees', []);
+            this.attendance = storage.get('attendance', []);
+            this.leaves = storage.get('leaves', []);
+            this.izin = storage.get('izin', []);
 
-        console.error('Error loading admin data:', error);
-
-        this.employees = storage.get('admin_employees', []);
-        this.attendance = storage.get('attendance', []);
-        this.leaves = storage.get('leaves', []);
-        this.izin = storage.get('izin', []);
-
-        this.updateStats();
-    }
-},
+            this.updateStats();
+        }
+    },
 
     updateStats() {
         const totalEmployees = this.employees.length;
-        const todayStr = dateTime.getLocalDate(); // yyyy-MM-dd
+        const todayStr = dateTime.getLocalDate();
 
-        // Filter attendance to ONLY today's records
         const todayAttendance = this.attendance.filter(a => a.date === todayStr);
 
-        // Compute from real Today records
         let presentToday = 0;
         let lateToday = 0;
 
         todayAttendance.forEach(att => {
             if (att.clockIn) {
                 presentToday++;
-                // Check if late
                 if (att.status && att.status.toLowerCase() === 'terlambat') {
                     lateToday++;
                 }
             }
         });
 
-        // Compute those on leave (cuti / izin) for today
         const onLeave = this.leaves.filter(l => l.status === 'approved' && l.startDate <= todayStr && l.endDate >= todayStr).length +
             this.izin.filter(i => i.status === 'approved' && i.date === todayStr).length;
 
-        // Everyone not present and not on leave is absent
         const absentToday = Math.max(0, totalEmployees - presentToday - onLeave);
 
-        // Count pending requests
         const pendingLeaves = this.leaves.filter(l => l.status === 'pending').length;
         const pendingIzin = this.izin.filter(i => i.status === 'pending').length;
         const totalPending = pendingLeaves + pendingIzin;
 
-        // Update DOM
         const els = {
             'total-employees': totalEmployees,
             'present-today': presentToday,
@@ -118,7 +109,6 @@ const adminDashboard = {
         Object.entries(els).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) {
-                // Animate number
                 this.animateNumber(el, parseInt(el.textContent) || 0, value);
             }
         });
@@ -131,8 +121,6 @@ const adminDashboard = {
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-
-            // Easing function
             const easeOutQuart = 1 - Math.pow(1 - progress, 4);
             const current = Math.floor(start + (end - start) * easeOutQuart);
 
@@ -195,10 +183,7 @@ const adminDashboard = {
         `).join('');
     },
 
-    // Charts initialization (placeholder - would use Chart.js in production)
     initCharts() {
-        // This would be where Chart.js or similar library is initialized
-        // For now, we'll just show placeholders
         const attendanceChart = document.getElementById('admin-attendance-chart');
         const deptChart = document.getElementById('admin-dept-chart');
 
@@ -224,7 +209,13 @@ const adminDashboard = {
 
 // Global init function
 window.initAdminDashboard = () => {
-    adminDashboard.init();
+    if (!adminDashboard.initialized) {
+        adminDashboard.init();
+    } else {
+        // Refresh data whenever the SPA returns to the admin dashboard.
+        adminDashboard.loadData();
+    }
+
     adminDashboard.initCharts();
 };
 

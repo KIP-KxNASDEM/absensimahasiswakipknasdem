@@ -44,7 +44,9 @@ const mobile = {
         }
 
         const bottomNav = document.getElementById('bottom-nav');
-        if (bottomNav) bottomNav.style.display = this.isMobile ? 'flex' : 'none';
+        const session = window.auth?.currentUser || window.storage?.get('session');
+        const isAdmin = session?.role === 'admin';
+        if (bottomNav) bottomNav.style.display = this.isMobile && !isAdmin ? 'flex' : 'none';
         this.updateTableViews();
     },
 

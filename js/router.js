@@ -91,9 +91,6 @@ const router = {
                 if (window.initEmployees) window.initEmployees();
                 break;
             case 'attendance-reports':
-                if (window.initAttendanceReports) window.initAttendanceReports();
-                // admin-reports.js is loaded before router.js. Load the runtime patch after it
-                // so the patched init is used on the first and subsequent visits.
                 this.loadAttendanceReportPatch();
                 break;
             case 'jurnal-reports':

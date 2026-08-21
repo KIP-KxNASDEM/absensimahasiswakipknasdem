@@ -1,7 +1,7 @@
 /**
  * Portal Mahasiswa - Admin Employees
- * Employee management for admin
- * Academic dimensions: Kampus + Prodi/Jurusan
+ * Student management for admin
+ * Academic dimensions: NIM + Kampus + Prodi/Jurusan
  */
 
 const adminEmployees = {
@@ -48,24 +48,43 @@ const adminEmployees = {
     ensureAcademicFields() {
         const form = document.getElementById('form-add-employee');
         const position = document.getElementById('emp-position');
-        if (!form || !position || document.getElementById('emp-kampus')) return;
+        if (!form || !position) return;
 
-        const row = position.closest('.form-row');
-        if (!row) return;
+        // NIM
+        if (!document.getElementById('emp-nim')) {
+            const row = position.closest('.form-row');
+            if (row) {
+                const nimRow = document.createElement('div');
+                nimRow.className = 'form-row';
+                nimRow.innerHTML = `
+                    <div class="form-group">
+                        <label for="emp-nim">NIM</label>
+                        <input type="text" id="emp-nim" inputmode="numeric" pattern="[0-9]+" placeholder="Nomor Induk Mahasiswa" required>
+                    </div>
+                `;
+                row.parentNode.insertBefore(nimRow, row);
+            }
+        }
 
-        const academicRow = document.createElement('div');
-        academicRow.className = 'form-row two-col academic-fields-row';
-        academicRow.innerHTML = `
-            <div class="form-group">
-                <label for="emp-kampus">Kampus</label>
-                <input type="text" id="emp-kampus" placeholder="Nama kampus" required>
-            </div>
-            <div class="form-group">
-                <label for="emp-prodi">Prodi / Jurusan</label>
-                <input type="text" id="emp-prodi" placeholder="Program studi / jurusan" required>
-            </div>
-        `;
-        row.parentNode.insertBefore(academicRow, row);
+        // Kampus + Prodi/Jurusan
+        if (!document.getElementById('emp-kampus')) {
+            const row = position.closest('.form-row');
+            if (row) {
+                const academicRow = document.createElement('div');
+                academicRow.className = 'form-row two-col academic-fields-row';
+                academicRow.innerHTML = `
+                    <div class="form-group">
+                        <label for="emp-kampus">Kampus</label>
+                        <input type="text" id="emp-kampus" placeholder="Nama kampus" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-prodi">Prodi / Jurusan</label>
+                        <input type="text" id="emp-prodi" placeholder="Program studi / jurusan" required>
+                    </div>
+                `;
+                row.parentNode.insertBefore(academicRow, row);
+            }
+        }
     },
 
     async loadEmployees() {
@@ -73,7 +92,7 @@ const adminEmployees = {
             const result = await api.getEmployees();
             this.employees = result.data || [];
         } catch (error) {
-            console.error('Error loading employees:', error);
+            console.error('Error loading students:', error);
             this.employees = storage.get('admin_employees', []);
         }
     },
@@ -124,12 +143,14 @@ const adminEmployees = {
         return this.employees.filter(emp => {
             const name = String(emp.name || '').toLowerCase();
             const email = String(emp.email || '').toLowerCase();
+            const nim = String(emp.nim || '').toLowerCase();
             const position = String(emp.position || '').toLowerCase();
             const campus = String(emp.kampus || emp.campus || '').toLowerCase();
             const prodi = String(emp.prodi || emp.jurusan || emp.programStudi || '').toLowerCase();
             const matchesSearch = !this.filters.search ||
                 name.includes(this.filters.search) ||
                 email.includes(this.filters.search) ||
+                nim.includes(this.filters.search) ||
                 position.includes(this.filters.search) ||
                 campus.includes(this.filters.search) ||
                 prodi.includes(this.filters.search);
@@ -146,6 +167,10 @@ const adminEmployees = {
         return emp?.prodi || emp?.jurusan || emp?.programStudi || '-';
     },
 
+    nimOf(emp) {
+        return emp?.nim || '-';
+    },
+
     renderTable() {
         const tbody = document.getElementById('employees-table-body');
         const table = document.getElementById('employees-table');
@@ -155,7 +180,7 @@ const adminEmployees = {
         if (headerRow) {
             headerRow.innerHTML = `
                 <th>Mahasiswa</th>
-                <th>ID</th>
+                <th>NIM</th>
                 <th>Kampus</th>
                 <th>Prodi / Jurusan</th>
                 <th>Jabatan</th>
@@ -185,7 +210,7 @@ const adminEmployees = {
                         </div>
                     </div>
                 </td>
-                <td>EMP${String(emp.id).padStart(3, '0')}</td>
+                <td>${this.nimOf(emp)}</td>
                 <td>${this.campusOf(emp)}</td>
                 <td>${this.prodiOf(emp)}</td>
                 <td>${emp.position || '-'}</td>
@@ -220,7 +245,7 @@ const adminEmployees = {
                     </div>
                     <span class="status-badge ${emp.status}">${this.getStatusLabel(emp.status)}</span>
                 </div>
-                <div class="mobile-card-row"><span class="mobile-card-label">ID</span><span class="mobile-card-value">EMP${String(emp.id).padStart(3, '0')}</span></div>
+                <div class="mobile-card-row"><span class="mobile-card-label">NIM</span><span class="mobile-card-value">${this.nimOf(emp)}</span></div>
                 <div class="mobile-card-row"><span class="mobile-card-label">Kampus</span><span class="mobile-card-value">${this.campusOf(emp)}</span></div>
                 <div class="mobile-card-row"><span class="mobile-card-label">Prodi / Jurusan</span><span class="mobile-card-value">${this.prodiOf(emp)}</span></div>
                 <div class="mobile-card-row"><span class="mobile-card-label">Jabatan</span><span class="mobile-card-value">${emp.position || '-'}</span></div>
@@ -295,27 +320,38 @@ const adminEmployees = {
         e.preventDefault();
         const name = document.getElementById('emp-name').value.trim();
         const email = document.getElementById('emp-email').value.trim();
+        const nim = document.getElementById('emp-nim')?.value.trim() || '';
         const kampus = document.getElementById('emp-kampus')?.value.trim() || '';
         const prodi = document.getElementById('emp-prodi')?.value.trim() || '';
         const position = document.getElementById('emp-position').value.trim();
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
 
+        if (!/^[0-9]+$/.test(nim)) {
+            toast.error('NIM wajib diisi dan hanya boleh berisi angka');
+            return;
+        }
+
         if (!kampus || !prodi) {
             toast.error('Kampus dan Prodi/Jurusan wajib diisi');
+            return;
+        }
+
+        const duplicateNim = this.employees.some(emp => String(emp.nim || '') === nim);
+        if (duplicateNim) {
+            toast.error('NIM sudah terdaftar');
             return;
         }
 
         const employeeData = {
             name,
             email,
+            nim,
             kampus,
             campus: kampus,
             prodi,
             jurusan: prodi,
-            department: '-',
             position,
-            shift: '-',
             status,
             joinDate,
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${this.getRandomColor()}&color=fff`
@@ -334,7 +370,7 @@ const adminEmployees = {
                 toast.error(result.error || 'Gagal menambahkan mahasiswa');
             }
         } catch (error) {
-            console.error('Error adding employee:', error);
+            console.error('Error adding student:', error);
             toast.error('Terjadi kesalahan');
         }
     },
@@ -347,7 +383,7 @@ const adminEmployees = {
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id === id);
         if (emp) {
-            alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nKampus: ${this.campusOf(emp)}\nProdi/Jurusan: ${this.prodiOf(emp)}\nJabatan: ${emp.position}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
+            alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nNIM: ${this.nimOf(emp)}\nEmail: ${emp.email}\nKampus: ${this.campusOf(emp)}\nProdi/Jurusan: ${this.prodiOf(emp)}\nJabatan: ${emp.position}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
         }
     },
 
@@ -365,7 +401,7 @@ const adminEmployees = {
                 this.updatePaginationInfo();
                 toast.success('Mahasiswa berhasil dihapus');
             } catch (error) {
-                console.error('Error deleting employee:', error);
+                console.error('Error deleting student:', error);
                 toast.error('Gagal menghapus mahasiswa');
             }
         }

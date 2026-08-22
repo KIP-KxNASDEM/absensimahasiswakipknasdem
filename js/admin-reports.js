@@ -201,8 +201,11 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawIzin = arr(i);
             
             this.rawJournals = j?.data || [];
-            this.jurnalData = j?.data || [];
-        console.log("JURNAL INIT:", this.jurnalData);
+            this.journalData = j.data || [];
+        console.log(
+            "SET JOURNAL DATA:",
+            this.journalData
+        );
             this.settings = s?.data || {};
             
             if (this.filters?.attendance) this.filters.attendance.dept = '';

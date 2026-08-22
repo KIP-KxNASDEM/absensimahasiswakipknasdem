@@ -19,10 +19,15 @@ const norm = v => String(v ?? '').trim().toLowerCase();
     const arr = v => {
     if (Array.isArray(v)) return v;
 
-    if (Array.isArray(v?.data)) return v.data;
+    if (v && Array.isArray(v.data)) {
+        return v.data;
+    }
 
-    if (Array.isArray(v?.result)) return v.result;
+    if (v && v.result && Array.isArray(v.result)) {
+        return v.result;
+    }
 
+    console.log("ARR FAILED:", v);
     return [];
 };
     const dateOf = r => val(r, ['date', 'tanggal', 'Date', 'Tanggal', 'attendanceDate', 'attendance_date']);
@@ -189,12 +194,16 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getAllJournals(),
                 api.getSettings()
 ]);
+            
+        console.log("GET ALL JOURNALS RESPONSE:", j);
             this.rawEmployees = arr(e);
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
             this.rawJournals = arr(j);
-            this.jurnalData = arr(j);
+            console.log("RAW JOURNALS:", this.rawJournals);
+            this.jurnalData = [...this.rawJournals];
+            console.log("FINAL JURNAL DATA:", this.jurnalData);
             this.settings = s?.data || {};
 
             if (this.filters?.attendance) this.filters.attendance.dept = '';

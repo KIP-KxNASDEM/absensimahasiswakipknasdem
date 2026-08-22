@@ -5,6 +5,7 @@
 
         const adminReports = {
             jurnalData: [],
+            rawJournals: [],
             attendanceData: [],
             filters: {
                 jurnal: {

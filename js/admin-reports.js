@@ -523,5 +523,4 @@ adminReports.renderJournalReports = function () {
 };
     
 window.adminReports = adminReports;
-
 })();

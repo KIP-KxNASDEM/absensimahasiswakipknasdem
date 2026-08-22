@@ -179,20 +179,21 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         cleanupAttendanceUi();
 
         try {
-            const [e, a, l, i, s] = await Promise.all([
+            const [e, a, l, i, j, s] = await Promise.all([
                 api.getEmployees(),
                 api.getAllAttendance(),
                 api.getAllLeaves(),
                 api.getAllIzin(),
+                api.getAllJournals(),
                 api.getSettings()
-            ]);
-
+]);
             this.rawEmployees = arr(e);
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
+            this.rawJournals = arr(j);
+            this.jurnalData = arr(j);
             this.settings = s?.data || {};
-            this.attendanceData = [];
 
             if (this.filters?.attendance) this.filters.attendance.dept = '';
 

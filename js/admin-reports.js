@@ -200,10 +200,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
             this.rawJournals = j?.data || [];
-            this.jurnalData = j?.data || [];
-        console.log("JOURNAL FINAL:", this.jurnalData);
-        console.log("RAW JOURNALS:", this.rawJournals);
-            this.jurnalData = [...this.rawJournals];
+           this.jurnalData = Array.isArray(j?.data) ? j.data : [];
         console.log("FINAL JURNAL DATA:", this.jurnalData);
             this.settings = s?.data || {};
 
@@ -274,7 +271,9 @@ adminReports.populateEmployeeFilter = function () {
     };
 
     adminReports.renderAttendanceReports = function () {
-        const tbody = document.getElementById('attendance-reports-body');
+       const tbody =
+           document.getElementById('journal-reports-body') ||
+           document.getElementById('journal-report-body');
         if (!tbody) return;
 
         const data = this.getFilteredAttendance();
@@ -340,7 +339,11 @@ adminReports.populateEmployeeFilter = function () {
 
     adminReports.viewDetail = function (name) {
         const month = this.filters?.attendance?.month || document.getElementById('attendance-month')?.value || '';
-        const employee = arr(this.rawEmployees).find(e => norm(e.name || e.nama) === norm(name));
+       const employee = (this.rawEmployees || []).find(
+ e =>
+ String(e.id) === String(j.userId) ||
+ String(e.userId) === String(j.userId)
+);
 
         if (!employee) {
             toast.error('Data mahasiswa tidak ditemukan');

@@ -474,7 +474,7 @@ adminReports.renderJournalReports = function () {
 
     }).join('');
 
-    renderJournalReports() {
+    adminReports.renderJournalReports = function() {
 
     const table = document.querySelector('#journal-report-body');
     if (!table) return;

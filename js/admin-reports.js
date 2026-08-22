@@ -186,8 +186,10 @@ const norm = v => String(v ?? '').trim().toLowerCase();
 
         try {
             const [e, a, l, i, j, s] = await Promise.all([
-                api.getEmployees(),
-                api.getAllAttendance(),
+            console.log("J VARIABLE:", j);
+            console.log("J DATA:", j.data);
+                api.getAllEmployees(),
+                api.getAttendance(),
                 api.getAllLeaves(),
                 api.getAllIzin(),
                 api.getAllJournals(),

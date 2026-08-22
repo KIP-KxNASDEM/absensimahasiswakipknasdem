@@ -200,9 +200,12 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
             
-           this.rawJournals = Array.isArray(j) 
+           this.rawJournals = 
+               Array.isArray(j) 
                ? j 
-               : (j?.data || []);
+               : (j && Array.isArray(j.data) ? j.data : []);
+            
+            this.journalData = this.rawJournals;
             this.journalData = this.rawJournals;
         console.log("J OBJECT:", j);
         console.log("FINAL JOURNAL:", this.journalData);

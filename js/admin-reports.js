@@ -521,6 +521,6 @@ adminReports.renderJournalReports = function () {
     }).join('');
         
 };
+    
 window.adminReports = adminReports;
-      })();
 

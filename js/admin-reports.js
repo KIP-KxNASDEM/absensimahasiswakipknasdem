@@ -434,46 +434,6 @@ adminReports.populateEmployeeFilter = function () {
     `;
     document.head.appendChild(style);
 
-adminReports.renderJournalReports = function () {
-
-    const tbody = document.getElementById('journal-reports-body');
-
-    if (!tbody) return;
-
-    const data = this.jurnalData || [];
-
-    if (data.length === 0) {
-        tbody.innerHTML = `
-        <tr>
-            <td colspan="8" style="text-align:center;padding:24px;color:#94a3b8">
-                Tidak ada data jurnal.
-            </td>
-        </tr>`;
-        return;
-    }
-
-
-    tbody.innerHTML = data.map(row => {
-
-        return `
-        <tr>
-            <td>${esc(row.date || row.tanggal || '-')}</td>
-            <td>${esc(row.name || row.nama || '-')}</td>
-            <td>${esc(row.kampus || '-')}</td>
-            <td>${esc(row.prodi || row.jurusan || '-')}</td>
-            <td>${esc(row.task || row.tugas || row.description || '-')}</td>
-            <td>${esc(row.photo || row.foto ? 'Ada' : '-')}</td>
-            <td>${esc(row.status || '-')}</td>
-            <td>
-                <button class="btn-action view">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </td>
-        </tr>
-        `;
-
-    }).join('');
-
     adminReports.renderJournalReports = function () {
 
     const tbody = document.getElementById('journal-report-body');

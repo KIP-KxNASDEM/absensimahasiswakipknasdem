@@ -16,13 +16,15 @@
         };
      
 const norm = v => String(v ?? '').trim().toLowerCase();
-    const arr = v => Array.isArray(v) ? v : (Array.isArray(v?.data) ? v.data : []);
-    const val = (o, keys) => {
-        for (const k of keys) {
-            if (o?.[k] !== undefined && o?.[k] !== null && String(o[k]).trim() !== '') return o[k];
-        }
-        return '';
-    };
+    const arr = v => {
+    if (Array.isArray(v)) return v;
+
+    if (Array.isArray(v?.data)) return v.data;
+
+    if (Array.isArray(v?.result)) return v.result;
+
+    return [];
+};
     const dateOf = r => val(r, ['date', 'tanggal', 'Date', 'Tanggal', 'attendanceDate', 'attendance_date']);
     const clockIn = r => val(r, ['clockIn', 'clockin', 'clock_in', 'Clock In', 'Jam Masuk', 'jamMasuk', 'jam_masuk']);
     const clockOut = r => val(r, ['clockOut', 'clockout', 'clock_out', 'Clock Out', 'Jam Pulang', 'jamPulang', 'jam_pulang']);

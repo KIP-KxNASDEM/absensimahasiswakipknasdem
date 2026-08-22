@@ -19,15 +19,14 @@ const norm = v => String(v ?? '').trim().toLowerCase();
     const arr = v => {
     if (Array.isArray(v)) return v;
 
-    if (v && Array.isArray(v.data)) {
+    if (Array.isArray(v?.data)) {
         return v.data;
     }
 
-    if (v && v.result && Array.isArray(v.result)) {
+    if (Array.isArray(v?.result)) {
         return v.result;
     }
 
-    console.log("ARR FAILED:", v);
     return [];
 };
     const dateOf = r => val(r, ['date', 'tanggal', 'Date', 'Tanggal', 'attendanceDate', 'attendance_date']);
@@ -200,15 +199,17 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
-            this.rawJournals = arr(j);
-            console.log("RAW JOURNALS:", this.rawJournals);
+            this.rawJournals = j?.data || [];
+            this.jurnalData = j?.data || [];
+        console.log("JOURNAL FINAL:", this.jurnalData);
+        console.log("RAW JOURNALS:", this.rawJournals);
             this.jurnalData = [...this.rawJournals];
-            console.log("FINAL JURNAL DATA:", this.jurnalData);
+        console.log("FINAL JURNAL DATA:", this.jurnalData);
             this.settings = s?.data || {};
 
             if (this.filters?.attendance) this.filters.attendance.dept = '';
-
-           this.bindAttendanceEvents();
+            
+            this.bindAttendanceEvents();
             this.populateEmployeeFilter?.();
             this.renderAttendanceReports();
             this.renderJournalReports?.();

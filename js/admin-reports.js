@@ -4,11 +4,11 @@
 
 
         const adminReports = {
-            jurnalData: [],
+            journalData: [],
             rawJournals: [],
             attendanceData: [],
             filters: {
-                jurnal: {
+                journal: {
                     employee: '',
                     status: ''
                 }
@@ -465,7 +465,7 @@ adminReports.populateEmployeeFilter = function () {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">
-                    Belum ada data jurnal
+                    Belum ada data journal
                 </td>
             </tr>
         `;

@@ -474,6 +474,53 @@ adminReports.renderJournalReports = function () {
 
     }).join('');
 
+    renderJournalReports() {
+
+    const table = document.querySelector('#journal-report-body');
+    if (!table) return;
+
+    const journals = this.jurnalData || [];
+
+    if (journals.length === 0) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center">
+                    Belum ada data jurnal
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+
+    table.innerHTML = journals.map(j => {
+
+        const employee = this.rawEmployees.find(
+            e => String(e.id) === String(j.userId)
+        );
+
+
+        return `
+        <tr>
+            <td>${j.date || '-'}</td>
+            <td>${employee?.name || '-'}</td>
+            <td>${employee?.kampus || '-'}</td>
+            <td>${employee?.prodi || '-'}</td>
+            <td>${j.tasks || '-'}</td>
+            <td>
+                ${j.photo 
+                ? `<img src="${j.photo}" width="50">`
+                : '-'}
+            </td>
+            <td>
+                ${j.achievements || '-'}
+            </td>
+        </tr>
+        `;
+
+    }).join('');
+
+}
 };
 window.adminReports = adminReports;
       })();

@@ -185,16 +185,14 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         cleanupAttendanceUi();
 
         try {
-            const [e, a, l, i, j, s] = await Promise.all([
-            console.log("J VARIABLE:", j);
-            console.log("J DATA:", j.data);
-                api.getAllEmployees(),
-                api.getAttendance(),
+            const [e,a,l,i,j,s] = await Promise.all([
+                api.getStudents(),
+                api.getAllAttendance(),
                 api.getAllLeaves(),
                 api.getAllIzin(),
                 api.getAllJournals(),
                 api.getSettings()
-]);
+            ]);
             
         console.log("GET ALL JOURNALS RESPONSE:", j);
             this.rawEmployees = arr(e);

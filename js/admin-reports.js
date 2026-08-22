@@ -474,17 +474,18 @@ adminReports.renderJournalReports = function () {
 
     }).join('');
 
-    adminReports.renderJournalReports = function() {
+    adminReports.renderJournalReports = function () {
 
-    const table = document.querySelector('#journal-report-body');
-    if (!table) return;
+    const tbody = document.getElementById('journal-report-body');
+
+    if (!tbody) return;
 
     const journals = this.jurnalData || [];
 
     if (journals.length === 0) {
-        table.innerHTML = `
+        tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align:center">
+                <td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">
                     Belum ada data jurnal
                 </td>
             </tr>
@@ -493,34 +494,50 @@ adminReports.renderJournalReports = function () {
     }
 
 
-    table.innerHTML = journals.map(j => {
+    tbody.innerHTML = journals.map(j => {
 
-        const employee = this.rawEmployees.find(
+        const employee = (this.rawEmployees || []).find(
             e => String(e.id) === String(j.userId)
         );
 
 
         return `
         <tr>
-            <td>${j.date || '-'}</td>
-            <td>${employee?.name || '-'}</td>
-            <td>${employee?.kampus || '-'}</td>
-            <td>${employee?.prodi || '-'}</td>
-            <td>${j.tasks || '-'}</td>
+            <td>${esc(j.date || '-')}</td>
+
             <td>
-                ${j.photo 
-                ? `<img src="${j.photo}" width="50">`
-                : '-'}
+                ${esc(employee?.name || '-')}
             </td>
+
             <td>
-                ${j.achievements || '-'}
+                ${esc(employee?.kampus || '-')}
             </td>
+
+            <td>
+                ${esc(employee?.prodi || '-')}
+            </td>
+
+            <td>
+                ${esc(j.tasks || '-')}
+            </td>
+
+            <td>
+                ${
+                    j.photo 
+                    ? `<img src="${esc(j.photo)}" width="50">`
+                    : '-'
+                }
+            </td>
+
+            <td>
+                ${esc(j.achievements || '-')}
+            </td>
+
         </tr>
         `;
 
     }).join('');
-    }
-        
+
 };
     
 window.adminReports = adminReports;

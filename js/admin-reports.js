@@ -199,11 +199,12 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
+            
             this.rawJournals = j?.data || [];
-           this.jurnalData = Array.isArray(j?.data) ? j.data : [];
-        console.log("FINAL JURNAL DATA:", this.jurnalData);
+            this.jurnalData = j?.data || [];
+        console.log("JURNAL INIT:", this.jurnalData);
             this.settings = s?.data || {};
-
+            
             if (this.filters?.attendance) this.filters.attendance.dept = '';
             
             this.bindAttendanceEvents();

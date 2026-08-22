@@ -459,7 +459,7 @@ adminReports.populateEmployeeFilter = function () {
 
     if (!tbody) return;
 
-    const journals = this.jurnalData || [];
+    const journals = this.journalData || [];
 
     if (journals.length === 0) {
         tbody.innerHTML = `

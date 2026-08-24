@@ -191,15 +191,23 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getAllLeaves(),
                 api.getAllIzin(),
                 api.getAllJournals(),
-                if (!this.journalData.length) {
-    console.warn("Journal kosong, mencoba reload");
-
-    const retry = await api.getAllJournals();
-
-    this.journalData = Array.isArray(retry?.data)
-        ? retry.data
-        : [];
-}
+        ]);
+            
+        this.rawJournals = Array.isArray(j?.data)
+            ? j.data
+            : [];
+            
+        this.journalData = [...this.rawJournals];
+            
+        if (!this.journalData.length) {
+            console.warn("Journal kosong, mencoba reload");
+                
+            const retry = await api.getAllJournals();
+                
+            this.journalData = Array.isArray(retry?.data)
+            ? retry.data
+            : [];
+        }
                 api.getSettings()
             ]);
             
@@ -208,16 +216,6 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
-            
-            // FIX JOURNAL RESPONSE
-            this.rawJournals = Array.isArray(j?.data)
-                ? j.data
-                : [];
-            this.journalData = [...this.rawJournals];
-        console.log(
-            "FIX JOURNAL DATA:",
-            this.journalData
-        );
             this.settings = s?.data || {};
             
             if (this.filters?.attendance) this.filters.attendance.dept = '';

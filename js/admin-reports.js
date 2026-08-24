@@ -191,6 +191,15 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getAllLeaves(),
                 api.getAllIzin(),
                 api.getAllJournals(),
+                if (!this.journalData.length) {
+    console.warn("Journal kosong, mencoba reload");
+
+    const retry = await api.getAllJournals();
+
+    this.journalData = Array.isArray(retry?.data)
+        ? retry.data
+        : [];
+}
                 api.getSettings()
             ]);
             
@@ -200,13 +209,13 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
             
-           this.rawJournals = 
-               Array.isArray(j) 
-               ? j 
-               : (j && Array.isArray(j.data) ? j.data : []);
+           this.rawJournals = Array.isArray(j?.data)
+               ? j.data
+               : [];
             
-            this.journalData = this.rawJournals;
-            this.journalData = this.rawJournals;
+            this.journalData = [...this.rawJournals];
+            
+        console.log("JOURNAL FINAL:", this.journalData);
         
         
         console.log(
@@ -467,7 +476,14 @@ adminReports.populateEmployeeFilter = function () {
 
     if (!tbody) return;
 
+    renderJournalReports() {
+
     const journals = this.journalData || [];
+
+    console.log(
+       "RENDER JOURNAL:",
+       journals
+    );
 
     if (journals.length === 0) {
         tbody.innerHTML = `

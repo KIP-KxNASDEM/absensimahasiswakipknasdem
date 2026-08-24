@@ -217,9 +217,6 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             
         console.log("JOURNAL FINAL:", this.journalData);
         
-        
-        console.log(
-            "SET JOURNAL DATA:",
             this.journalData
         );
             this.settings = s?.data || {};

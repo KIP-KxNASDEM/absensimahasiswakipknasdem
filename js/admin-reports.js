@@ -209,14 +209,13 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
             
-           this.rawJournals = Array.isArray(j?.data)
-               ? j.data
-               : [];
-            
+            // FIX JOURNAL RESPONSE
+            this.rawJournals = Array.isArray(j?.data)
+                ? j.data
+                : [];
             this.journalData = [...this.rawJournals];
-            
-        console.log("JOURNAL FINAL:", this.journalData);
-        
+        console.log(
+            "FIX JOURNAL DATA:",
             this.journalData
         );
             this.settings = s?.data || {};

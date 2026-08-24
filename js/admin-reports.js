@@ -194,7 +194,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getSettings()
             ]);
             
-        console.log("GET ALL JOURNALS RESPONSE:", j);
+        
             this.rawEmployees = arr(e);
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
@@ -207,8 +207,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             
             this.journalData = this.rawJournals;
             this.journalData = this.rawJournals;
-        console.log("J OBJECT:", j);
-        console.log("FINAL JOURNAL:", this.journalData);
+        
+        
         console.log(
             "SET JOURNAL DATA:",
             this.journalData
@@ -351,9 +351,10 @@ adminReports.populateEmployeeFilter = function () {
     adminReports.viewDetail = function (name) {
         const month = this.filters?.attendance?.month || document.getElementById('attendance-month')?.value || '';
        const employee = (this.rawEmployees || []).find(
- e =>
- String(e.id) === String(j.userId) ||
- String(e.userId) === String(j.userId)
+    e =>
+    String(e.name || e.nama) === String(name) ||
+    String(e.id) === String(name) ||
+    String(e.userId) === String(name)
 );
 
         if (!employee) {
@@ -483,7 +484,10 @@ adminReports.populateEmployeeFilter = function () {
     tbody.innerHTML = journals.map(j => {
 
         const employee = (this.rawEmployees || []).find(
-            e => String(e.id) === String(j.userId)
+            e =>
+            String(e.id) === String(j.userId) ||
+            String(e.userId) === String(j.userId) ||
+            String(e.studentId) === String(j.userId)
         );
 
 

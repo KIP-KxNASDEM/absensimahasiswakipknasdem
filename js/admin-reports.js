@@ -194,23 +194,30 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getSettings()
             ]);
 
-       this.rawJournals = arr(j);
-
         if (!this.journalData.length) {    
             this.journalData = Array.isArray(retry?.data)
             ? retry.data
             : [];
-        }
-                api.getSettings()
+       
       
             this.rawEmployees = arr(e);
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
+
+            this.rawJournals = Array.isArray(j?.data)
+                ? j.data
+                : [];
+            
+            this.journalData = [...this.rawJournals];
+            
             this.settings = s?.data || {};
+
+            console.log("FIX JOURNAL LOAD:", this.journalData);
             
             if (this.filters?.attendance) this.filters.attendance.dept = '';
-            
+        }
+
             this.bindAttendanceEvents();
             this.populateEmployeeFilter?.();
             this.renderAttendanceReports();

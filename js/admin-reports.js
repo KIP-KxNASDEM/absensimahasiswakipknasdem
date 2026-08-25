@@ -223,16 +223,17 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             
 
     // FIX JOURNAL
+        console.log("J RESPONSE ASLI >>>", j);
+
         this.rawJournals = Array.isArray(j?.data)
-            ? [...j.data]
+            ? j.data
             : [];
-            
-        console.log("RAW JOURNALS >>>", this.rawJournals);
+
+        console.log("RAW JOURNALS SET >>>", this.rawJournals);
 
         this.journalData = [...this.rawJournals];
 
-        console.log("JOURNAL SAVED >>>", this.journalData);
-        console.log("JOURNAL DATA >>>", this.journalData);
+        console.log("JOURNAL DATA SET >>>", this.journalData);ta);
 
             this.settings = s?.data || {};      
             
@@ -511,15 +512,16 @@ adminReports.populateEmployeeFilter = function () {
 
     tbody.innerHTML = journals.map(j => {
 
-        const employee = (this.rawEmployees || []).find(
-            e =>
-            String(e.id) === String(j.userId) ||
-            String(e.userId) === String(j.userId) ||
-            String(e.studentId) === String(j.userId)
-        );
+    const employee = (this.rawEmployees || []).find(
+        e =>
+       String(e.id) === String(j.userId) ||
+        String(e.userId) === String(j.userId)
+    );
 
+    console.log("J USER ID:", j.userId);
+    console.log("FOUND EMPLOYEE:", employee);
 
-        return `
+    return `
         <tr>
             <td>${esc(j.date || '-')}</td>
 

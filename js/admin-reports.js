@@ -219,6 +219,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
 
             this.journalData = this.rawJournals;
 
+            console.log("INIT JOURNAL >>>", this.journalData);
 
             this.settings = s?.data || {};            
            

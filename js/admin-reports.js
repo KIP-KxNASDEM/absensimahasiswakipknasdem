@@ -185,30 +185,53 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         cleanupAttendanceUi();
 
         try {
-            const [e,a,l,i,j,s] = await Promise.all([
+           const [e,a,l,i,j,s] = await Promise.all([
+            api.getStudents(),
+            api.getAllAttendance(),
+            api.getAllLeaves(),
+            api.getAllIzin(),
+            api.getAllJournals(),
+            api.getSettings()
+        ]);
+
+
+        this.rawEmployees = Array.isArray(e?.data)
+            ? e.data
+            : [];
+
+        this.rawAttendance = Array.isArray(a?.data)
+            ? a.data
+            : [];
+
+        this.rawLeaves = Array.isArray(l?.data)
+            ? l.data
+            : [];
+
+        this.rawIzin = Array.isArray(i?.data)
+            ? i.data
+            : [];
             
-            this.rawEmployees = arr(e);
-            this.rawAttendance = arr(a);
-            this.rawLeaves = arr(l);
-            this.rawIzin = arr(i);
-            
+
+    // FIX JOURNAL
             this.rawJournals = Array.isArray(j?.data)
                 ? j.data
                 : [];
-            
-            this.journalData = [...this.rawJournals];
-        
-            this.settings = s?.data || {};
 
+            this.journalData = this.rawJournals;
+
+
+            this.settings = s?.data || {};            
+           
             this.bindAttendanceEvents();
             this.populateEmployeeFilter?.();
             this.renderAttendanceReports();
             this.renderJournalReports?.();
             
-            } catch (e) {
+         } catch (e) {
             console.error(e);
             toast.error('Gagal memuat data absensi');
             }
+    };
 
      adminReports.bindAttendanceEvents = function () {
     const month = document.getElementById('attendance-month');

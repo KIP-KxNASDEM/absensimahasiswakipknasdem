@@ -203,7 +203,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             api.getSettings()
         ]);
 
-        console.log("DEBUG J >>>", j);
+        console.log("J OBJECT >>>", j);
 
         this.rawEmployees = Array.isArray(e?.data)
             ? e.data
@@ -234,6 +234,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         this.journalData = [...this.rawJournals];
 
         console.log("JOURNAL SAVED >>>", this.journalData);
+        console.log("JOURNAL DATA >>>", this.journalData);
 
             this.settings = s?.data || {};      
             

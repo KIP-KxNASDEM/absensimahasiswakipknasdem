@@ -4,15 +4,6 @@
 
 
         const adminReports = {
-            Object.defineProperty(adminReports,'journalData',{
-    set(v){
-        console.log('journalData berubah:',v);
-        this._journalData=v;
-    },
-    get(){
-        return this._journalData || [];
-    }
-});
             journalData: [],
             rawJournals: [],
             attendanceData: [],
@@ -23,6 +14,15 @@
                 }
             }
         };
+     Object.defineProperty(adminReports, 'journalData', {
+    set(v) {
+        console.log('journalData berubah:', v);
+        this._journalData = v;
+    },
+    get() {
+        return this._journalData || [];
+    }
+});
      
 const norm = v => String(v ?? '').trim().toLowerCase();
     const arr = v => {
@@ -232,10 +232,6 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         raw: this.rawJournals,
         journal: this.journalData
     });
-
-            this.journalData = this.rawJournals;
-
-            console.log("INIT JOURNAL >>>", this.journalData);
 
             this.settings = s?.data || {};            
            

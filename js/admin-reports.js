@@ -371,11 +371,13 @@ adminReports.populateEmployeeFilter = function () {
 
     adminReports.viewDetail = function (name) {
         const month = this.filters?.attendance?.month || document.getElementById('attendance-month')?.value || '';
-       const employee = (this.rawEmployees || []).find(
-    e =>
-    String(e.name || e.nama) === String(name) ||
-    String(e.id) === String(name) ||
-    String(e.userId) === String(name)
+        const employee = (this.rawEmployees || []).find(
+            e =>
+            String(e.name || e.nama) === String(name) ||
+            String(e.id) === String(name) ||
+            String(e.userId) === String(name)
+        console.log("CURRENT JOURNAL", j);
+        console.log("FOUND EMPLOYEE", employee);
 );
 
         if (!employee) {

@@ -56,14 +56,17 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 
-    const samePerson = (a, b) => {
-        const keys = ['id', 'userId', 'userID', 'userid', 'studentId', 'studentID', 'employeeId', 'employeeID', 'nim', 'NIM', 'email', 'Email', 'User ID', 'Student ID', 'Employee ID'];
-        for (const k of keys) {
-            const av = norm(a?.[k]);
-            const bv = norm(b?.[k]);
-            if (av && bv && av === bv) return true;
-        }
-        const an = norm(val(a, ['name', 'nama', 'Nama']));
+    function samePerson(a, b) {
+    const normalize = (value) => {
+        return String(value || '')
+            .trim()
+            .toLowerCase();
+    };
+
+    return normalize(a?.name || a?.id || a?.userId) ===
+           normalize(b?.name || b?.id || b?.userId);
+}
+     const an = norm(val(a, ['name', 'nama', 'Nama']));
         const bn = norm(val(b, ['name', 'nama', 'Nama']));
         return !!an && an === bn;
     };

@@ -186,46 +186,29 @@ const norm = v => String(v ?? '').trim().toLowerCase();
 
         try {
             const [e,a,l,i,j,s] = await Promise.all([
-                api.getStudents(),
-                api.getAllAttendance(),
-                api.getAllLeaves(),
-                api.getAllIzin(),
-                api.getAllJournals(),
-                api.getSettings()
-            ]);
-
-            this.journalData = Array.isArray(retry?.data)
-            ? retry.data
-            : [];
-       
-      
+            
             this.rawEmployees = arr(e);
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);
             this.rawIzin = arr(i);
-
+            
             this.rawJournals = Array.isArray(j?.data)
                 ? j.data
                 : [];
             
             this.journalData = [...this.rawJournals];
-            
+        
             this.settings = s?.data || {};
-
-            console.log("FIX JOURNAL LOAD:", this.journalData);
-            
-            if (this.filters?.attendance) this.filters.attendance.dept = '';
-        }
 
             this.bindAttendanceEvents();
             this.populateEmployeeFilter?.();
             this.renderAttendanceReports();
             this.renderJournalReports?.();
-        } catch (e) {
+            
+            } catch (e) {
             console.error(e);
             toast.error('Gagal memuat data absensi');
-        }
-    };
+            }
 
      adminReports.bindAttendanceEvents = function () {
     const month = document.getElementById('attendance-month');

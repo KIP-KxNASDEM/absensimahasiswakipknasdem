@@ -61,14 +61,12 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         return String(value || '')
             .trim()
             .toLowerCase();
+    };
 
     return normalize(a?.name || a?.id || a?.userId) ===
            normalize(b?.name || b?.id || b?.userId);
-}
-     const an = norm(val(a, ['name', 'nama', 'Nama']));
-        const bn = norm(val(b, ['name', 'nama', 'Nama']));
-        return !!an && an === bn;
-    };
+
+    }
 
     const employeeId = e => e?.id ?? e?.userId ?? e?.employeeId ?? e?.studentId;
 

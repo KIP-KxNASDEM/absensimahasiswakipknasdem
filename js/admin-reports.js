@@ -191,7 +191,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getAllLeaves(),
                 api.getAllIzin(),
                 api.getAllJournals(),
-        ]);
+                api.getSettings()
+            ]);
             
         this.rawJournals = Array.isArray(j?.data)
             ? j.data
@@ -199,11 +200,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             
         this.journalData = [...this.rawJournals];
             
-        if (!this.journalData.length) {
-            console.warn("Journal kosong, mencoba reload");
-                
-            const retry = await api.getAllJournals();
-                
+        if (!this.journalData.length) {    
             this.journalData = Array.isArray(retry?.data)
             ? retry.data
             : [];
@@ -286,8 +283,7 @@ adminReports.populateEmployeeFilter = function () {
 
     adminReports.renderAttendanceReports = function () {
        const tbody =
-           document.getElementById('journal-reports-body') ||
-           document.getElementById('journal-report-body');
+           document.getElementById('attendance-reports-body');
         if (!tbody) return;
 
         const data = this.getFilteredAttendance();

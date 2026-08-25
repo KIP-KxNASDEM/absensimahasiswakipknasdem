@@ -194,12 +194,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getSettings()
             ]);
 
-        this.rawJournals = Array.isArray(j?.data)
-            ? j.data
-            : [];
-            
-        this.journalData = [...this.rawJournals];
-            
+       this.rawJournals = arr(j);
+
         if (!this.journalData.length) {    
             this.journalData = Array.isArray(retry?.data)
             ? retry.data

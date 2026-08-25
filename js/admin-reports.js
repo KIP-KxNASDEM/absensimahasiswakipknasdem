@@ -226,8 +226,6 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             ? [...j.data]
             : [];
 
-        this.journalData = [...this.rawJournals];
-
     console.log("INIT JOURNAL >>>", {
         raw: this.rawJournals,
         journal: this.journalData

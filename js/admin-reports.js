@@ -226,10 +226,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         this.rawJournals = Array.isArray(j?.data)
             ? [...j.data]
             : [];
-
-    console.log("J OBJECT >>>", j);
-
-        this.rawJournals = j?.data || [];
+            
+        console.log("RAW JOURNALS >>>", this.rawJournals);
 
         this.journalData = [...this.rawJournals];
 

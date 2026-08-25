@@ -4,6 +4,15 @@
 
 
         const adminReports = {
+            Object.defineProperty(adminReports,'journalData',{
+    set(v){
+        console.log('journalData berubah:',v);
+        this._journalData=v;
+    },
+    get(){
+        return this._journalData || [];
+    }
+});
             journalData: [],
             rawJournals: [],
             attendanceData: [],
@@ -213,9 +222,16 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             
 
     // FIX JOURNAL
-            this.rawJournals = Array.isArray(j?.data)
-                ? j.data
-                : [];
+        this.rawJournals = Array.isArray(j?.data)
+            ? [...j.data]
+            : [];
+
+        this.journalData = [...this.rawJournals];
+
+    console.log("INIT JOURNAL >>>", {
+        raw: this.rawJournals,
+        journal: this.journalData
+    });
 
             this.journalData = this.rawJournals;
 
@@ -473,8 +489,11 @@ adminReports.populateEmployeeFilter = function () {
 
     if (!tbody) return;
 
-    const journals = this.journalData || [];
-
+    const journals = Array.isArray(this.journalData)
+    ? this.journalData
+    : Array.isArray(this.rawJournals)
+        ? this.rawJournals
+        : [];
     console.log(
         "RENDER JOURNAL:",
         journals

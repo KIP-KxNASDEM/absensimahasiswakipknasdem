@@ -227,12 +227,16 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             ? [...j.data]
             : [];
 
-    console.log("INIT JOURNAL >>>", {
-        raw: this.rawJournals,
-        journal: this.journalData
-    });
+    console.log("J OBJECT >>>", j);
 
-            this.settings = s?.data || {};            
+        this.rawJournals = j?.data || [];
+
+        this.journalData = [...this.rawJournals];
+
+        console.log("JOURNAL SAVED >>>", this.journalData);
+
+            this.settings = s?.data || {};      
+            
            
             this.bindAttendanceEvents();
             this.populateEmployeeFilter?.();

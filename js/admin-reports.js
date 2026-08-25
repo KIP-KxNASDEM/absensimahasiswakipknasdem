@@ -464,15 +464,13 @@ adminReports.populateEmployeeFilter = function () {
 
     if (!tbody) return;
 
-    renderJournalReports() {
-
     const journals = this.journalData || [];
 
     console.log(
-       "RENDER JOURNAL:",
-       journals
+        "RENDER JOURNAL:",
+        journals
     );
-
+        
     if (journals.length === 0) {
         tbody.innerHTML = `
             <tr>

@@ -61,7 +61,6 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         return String(value || '')
             .trim()
             .toLowerCase();
-    };
 
     return normalize(a?.name || a?.id || a?.userId) ===
            normalize(b?.name || b?.id || b?.userId);

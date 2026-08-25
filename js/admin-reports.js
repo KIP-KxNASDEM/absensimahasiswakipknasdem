@@ -193,7 +193,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                 api.getAllJournals(),
                 api.getSettings()
             ]);
-            
+
         this.rawJournals = Array.isArray(j?.data)
             ? j.data
             : [];
@@ -206,9 +206,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             : [];
         }
                 api.getSettings()
-            ]);
-            
-        
+      
             this.rawEmployees = arr(e);
             this.rawAttendance = arr(a);
             this.rawLeaves = arr(l);

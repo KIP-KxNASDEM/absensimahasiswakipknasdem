@@ -203,6 +203,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             api.getSettings()
         ]);
 
+        console.log("DEBUG J >>>", j);
 
         this.rawEmployees = Array.isArray(e?.data)
             ? e.data

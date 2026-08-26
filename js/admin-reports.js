@@ -233,7 +233,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
 
         this.journalData = [...this.rawJournals];
 
-        console.log("JOURNAL DATA SET >>>", this.journalData);ta);
+        console.log("JOURNAL DATA SET >>>", this.journalData);
 
             this.settings = s?.data || {};      
             

@@ -561,6 +561,17 @@ adminReports.populateEmployeeFilter = function () {
     }).join('');
 
 };
-    
+    const adminReports = {
+
+    initAttendanceReports: async function(){
+        ...
+    },
+
+    renderJournalReports: function(){
+        ...
+    }
+
+};
+
+     
 window.adminReports = adminReports;
- })();

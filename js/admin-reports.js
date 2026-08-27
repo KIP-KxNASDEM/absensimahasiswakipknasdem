@@ -562,7 +562,6 @@ adminReports.populateEmployeeFilter = function () {
     }).join('');
 
 };
-    const adminReports = {
 
     initAttendanceReports: async function(){
         ...

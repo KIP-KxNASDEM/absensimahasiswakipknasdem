@@ -320,6 +320,10 @@ const api = {
 
 
     async getAllJournals() {
+        return await this.request({
+            action:"getAllJournals"
+        });
+    }
 
         if (!API_BASE_URL) {
 

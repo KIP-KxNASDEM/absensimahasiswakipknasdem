@@ -561,11 +561,11 @@ adminReports.populateEmployeeFilter = function () {
 
     }).join('');
 
-    initAttendanceReports: async function(){
+   adminReports. initAttendanceReports: async function(){
         ...
     },
 
-    renderJournalReports: function(){
+    adminReports.renderJournalReports: function(){
         ...
     }
 

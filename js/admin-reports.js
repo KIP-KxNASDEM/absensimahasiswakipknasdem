@@ -223,16 +223,17 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             
 
     // FIX JOURNAL
-        console.log("J OBJECT >>>", journals);
+        const jResponse = await api.getAllJournals();
+            
+        console.log("J RESPONSE ASLI >>>", jResponse);
 
-        this.rawJournals = Array.isArray(journals?.data)
-            ? joiurnals.data
+        this.rawJournals = Array.isArray(jResponse?.data)
+            ? jResponse.data
             : [];
 
-        console.log("RAW JOURNALS SET >>>", this.rawJournals);
-
         this.journalData = [...this.rawJournals];
-
+            
+        console.log("RAW JOURNALS SET >>>", this.rawJournals);
         console.log("JOURNAL DATA SET >>>", this.journalData);
 
             this.settings = s?.data || {};      

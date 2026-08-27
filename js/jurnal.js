@@ -283,6 +283,15 @@ const jurnal = {
         }
     },
 
+    hidePhotoPreview() {
+        const preview = document.getElementById('photo-preview');
+
+        if (preview) {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+    },
+    
     updateStatusBadge(status) {
         const badge = document.getElementById('jurnal-status');
         if (!badge) return;

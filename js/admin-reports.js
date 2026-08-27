@@ -561,8 +561,6 @@ adminReports.populateEmployeeFilter = function () {
 
     }).join('');
 
-};
-
     initAttendanceReports: async function(){
         ...
     },
@@ -571,7 +569,7 @@ adminReports.populateEmployeeFilter = function () {
         ...
     }
 
-};
+    };
 
      
 window.adminReports = adminReports;

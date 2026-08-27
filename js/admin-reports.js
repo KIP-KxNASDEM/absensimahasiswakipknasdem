@@ -225,16 +225,21 @@ const norm = v => String(v ?? '').trim().toLowerCase();
     // FIX JOURNAL
         const jResponse = await api.getAllJournals();
             
-        console.log("J RESPONSE ASLI >>>", jResponse);
+        console.log("=== JOURNALS DEBUG ===");
+        console.log("FULL RESPONSE:", jResponse);
+        console.log("DATA:",jResponse?.data);
+        console.log("DATA LENGTH:", jResponse?.data?length);
 
-        this.rawJournals = Array.isArray(jResponse?.data)
-            ? jResponse.data
-            : [];
 
-        this.journalData = [...this.rawJournals];
+        if (Array.isArray(jResponse?.data)) {
+            this.rawJournals = jResponse.data;
+            this.journalData = jResponse.data;
+        } else {
+            this.rawJournals = [];
+            this.journalData = [];
+}
             
-        console.log("RAW JOURNALS SET >>>", this.rawJournals);
-        console.log("JOURNAL DATA SET >>>", this.journalData);
+        console.log("FINAL RAW JOURNALS;", this.rawJournals);
 
             this.settings = s?.data || {};      
             

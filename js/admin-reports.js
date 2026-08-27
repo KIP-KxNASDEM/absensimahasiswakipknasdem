@@ -223,10 +223,10 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             
 
     // FIX JOURNAL
-        console.log("J RESPONSE ASLI >>>", j);
+        console.log("J OBJECT >>>", journals);
 
-        rawJournals = Array.isArray(j?.data)
-            ? j.data
+        this.rawJournals = Array.isArray(journals?.data)
+            ? joiurnals.data
             : [];
 
         console.log("RAW JOURNALS SET >>>", this.rawJournals);

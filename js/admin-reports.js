@@ -247,6 +247,9 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             this.bindAttendanceEvents();
             this.populateEmployeeFilter?.();
             this.renderAttendanceReports();
+        
+        console.log("BEFORE RENDER JOURNAL", this.rawJournals);
+        
             this.renderJournalReports?.();
             
          } catch (e) {

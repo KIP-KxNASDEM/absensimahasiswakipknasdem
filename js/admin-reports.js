@@ -573,3 +573,4 @@ adminReports.populateEmployeeFilter = function () {
 
      
 window.adminReports = adminReports;
+ })();

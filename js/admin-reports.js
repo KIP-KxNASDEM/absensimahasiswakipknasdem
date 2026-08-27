@@ -376,9 +376,10 @@ adminReports.populateEmployeeFilter = function () {
             String(e.name || e.nama) === String(name) ||
             String(e.id) === String(name) ||
             String(e.userId) === String(name)
+        );
+        
         console.log("CURRENT JOURNAL", j);
         console.log("FOUND EMPLOYEE", employee);
-);
 
         if (!employee) {
             toast.error('Data mahasiswa tidak ditemukan');

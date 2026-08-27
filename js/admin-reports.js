@@ -225,7 +225,7 @@ const norm = v => String(v ?? '').trim().toLowerCase();
     // FIX JOURNAL
         console.log("J RESPONSE ASLI >>>", j);
 
-        this.rawJournals = Array.isArray(j?.data)
+        rawJournals = Array.isArray(j?.data)
             ? j.data
             : [];
 

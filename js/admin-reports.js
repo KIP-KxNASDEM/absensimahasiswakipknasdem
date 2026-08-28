@@ -509,7 +509,7 @@ adminReports.populateEmployeeFilter = function () {
 
     const employee = (this.rawEmployees || []).find(
         e =>
-       String(e.id) === String(j.userId) ||
+        String(e.id) === String(j.userId) ||
         String(e.userId) === String(j.userId)
     );
 
@@ -552,6 +552,8 @@ adminReports.populateEmployeeFilter = function () {
         `;
 
     }).join('');
+    
+};
 
    adminReports. initAttendanceReports = async function(){
        
@@ -629,4 +631,4 @@ adminReports.populateEmployeeFilter = function () {
      
 window.adminReports = adminReports;
         
- })();
+})();

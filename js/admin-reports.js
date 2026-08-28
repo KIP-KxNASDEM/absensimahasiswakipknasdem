@@ -563,6 +563,7 @@ adminReports.populateEmployeeFilter = function () {
 
     };
 
+     console.log("EXPORT ADMIN REPORTS", adminReports);
      
 window.adminReports = adminReports;
  })();

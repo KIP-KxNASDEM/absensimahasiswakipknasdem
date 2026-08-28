@@ -218,6 +218,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             ? j.data
             : [];
 
+        console.log("RAW JOURNAL AFTER SET >>>", this.rawJournals);
+
         this.journalData = [...this.rawJournals];
 
         console.log("FIX JOURNAL DATA:", this.journalData);

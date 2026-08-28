@@ -319,27 +319,24 @@ const api = {
     },
 
 
-    async getAllJournals() {
-        return await this.request({
-            action:"getAllJournals"
-        });
+   async getAllJournals() {
+
+    if (!API_BASE_URL) {
+
+        return {
+            success: true,
+            data: storage.get(
+                'jurnals',
+                []
+            )
+        };
+
     }
 
-        if (!API_BASE_URL) {
-
-            return {
-                success: true,
-                data: storage.get(
-                    'jurnals',
-                    []
-                )
-            };
-        }
-
-        return this.request(
-            'getAllJournals'
-        );
-    },
+    return this.request(
+        'getAllJournals'
+    );
+},
 
 
     // ==================================================

@@ -554,14 +554,76 @@ adminReports.populateEmployeeFilter = function () {
     }).join('');
 
    adminReports. initAttendanceReports = async function(){
-      
-    },
+       
+    try {
 
-    adminReports.renderJournalReports = function(){
-      
+        const [
+            e,
+            a,
+            l,
+            i,
+            j,
+            s
+        ] = await Promise.all([
+            api.getStudents(),
+            api.getAllAttendance(),
+            api.getAllLeaves(),
+            api.getAllIzin(),
+            api.getAllJournals(),
+            api.getSettings()
+        ]);
+
+
+        this.rawEmployees = Array.isArray(e?.data)
+            ? e.data
+            : [];
+
+
+        this.rawAttendance = Array.isArray(a?.data)
+            ? a.data
+            : [];
+
+
+        this.rawLeaves = Array.isArray(l?.data)
+            ? l.data
+            : [];
+
+
+        this.rawIzin = Array.isArray(i?.data)
+            ? i.data
+            : [];
+
+
+        this.rawJournals = Array.isArray(j?.data)
+            ? j.data
+            : [];
+
+
+        this.journalData = [...this.rawJournals];
+
+
+        this.settings = s?.data || {};
+
+
+        console.log("JOURNAL LOADED:", this.rawJournals);
+
+
+        this.bindAttendanceEvents?.();
+        this.populateEmployeeFilter?.();
+        this.renderAttendanceReports?.();
+        this.renderJournalReports?.();
+
+
+    } catch(err){
+
+        console.error(
+            "INIT ADMIN REPORT ERROR:",
+            err
+        );
+
     }
 
-    };
+};
 
      console.log("EXPORT ADMIN REPORTS", adminReports);
      

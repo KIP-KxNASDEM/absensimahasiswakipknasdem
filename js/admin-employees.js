@@ -183,7 +183,6 @@ const adminEmployees = {
                 <th>NIM</th>
                 <th>Kampus</th>
                 <th>Prodi / Jurusan</th>
-                <th>Jabatan</th>
                 <th>Status</th>
                 <th>Aksi</th>
             `;
@@ -247,7 +246,6 @@ const adminEmployees = {
                 <div class="mobile-card-row"><span class="mobile-card-label">NIM</span><span class="mobile-card-value">${this.nimOf(emp)}</span></div>
                 <div class="mobile-card-row"><span class="mobile-card-label">Kampus</span><span class="mobile-card-value">${this.campusOf(emp)}</span></div>
                 <div class="mobile-card-row"><span class="mobile-card-label">Prodi / Jurusan</span><span class="mobile-card-value">${this.prodiOf(emp)}</span></div>
-                <div class="mobile-card-row"><span class="mobile-card-label">Jabatan</span><span class="mobile-card-value">${emp.position || '-'}</span></div>
                 <div style="margin-top:var(--spacing);display:flex;gap:var(--spacing-xs);">
                     <button class="btn-action view" onclick="adminEmployees.viewEmployee(${emp.id})" style="flex:1;"><i class="fas fa-eye"></i> Lihat</button>
                     <button class="btn-action edit" onclick="adminEmployees.editEmployee(${emp.id})" style="flex:1;"><i class="fas fa-edit"></i> Edit</button>
@@ -382,7 +380,7 @@ const adminEmployees = {
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id === id);
         if (emp) {
-            alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nNIM: ${this.nimOf(emp)}\nEmail: ${emp.email}\nKampus: ${this.campusOf(emp)}\nProdi/Jurusan: ${this.prodiOf(emp)}\nJabatan: ${emp.position}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
+            alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nNIM: ${this.nimOf(emp)}\nEmail: ${emp.email}\nKampus: ${this.campusOf(emp)}\nProdi/Jurusan: ${this.prodiOf(emp)}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
         }
     },
 

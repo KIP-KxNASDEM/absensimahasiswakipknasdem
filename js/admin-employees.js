@@ -386,26 +386,7 @@ const adminEmployees = {
 
     editEmployee(id) {
         console.log("Edit mahasiswa:", id);
-    }
-
-    viewEmployee(id) {
-
-    const emp = this.employees.find(
-        e => String(e.id) === String(id)
-    );
-
-    if (!emp) {
-        toast.error('Data mahasiswa tidak ditemukan');
-        return;
-    }
-
-    alert(
-        "Nama : " + emp.name +
-        "\nEmail : " + emp.email +
-        "\nNIM : " + this.nimOf(emp)
-    );
-
-},
+    },
     
     async deleteEmployee(id) {
         if (confirm('Apakah Anda yakin ingin menghapus mahasiswa ini?')) {

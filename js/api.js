@@ -652,6 +652,24 @@ const api = {
         );
     },
 
+    // ===============================
+// USERS
+// ===============================
+
+async getUsers() {
+
+    if (!API_BASE_URL) {
+        return {
+            success:true,
+            data:storage.get('users') || []
+        };
+    }
+
+    return this.request(
+        'getUsers'
+    );
+},
+    
 
     // ==================================================
     // STUDENTS

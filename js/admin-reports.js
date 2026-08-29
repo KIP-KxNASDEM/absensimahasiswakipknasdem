@@ -193,7 +193,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
                journalsRes,
                settingsRes
         ] = await Promise.all([
-            api.getStudents(),
+            api.getEmployees(),
+            api.getUsers(),
             api.getAllAttendance(),
             api.getAllLeaves(),
             api.getAllIzin(),
@@ -207,6 +208,10 @@ const norm = v => String(v ?? '').trim().toLowerCase();
 
         this.rawEmployees = Array.isArray(employeesRes?.data)
             ? employeesRes.data
+            : [];
+
+        this.rawUsers = Array.isArray(u?.data)
+            ? u.data
             : [];
 
         this.rawAttendance = Array.isArray(attendanceRes?.data)
@@ -527,11 +532,18 @@ adminReports.populateEmployeeFilter = function () {
 
     tbody.innerHTML = journals.map(j => {
 
-    const employee = (this.rawEmployees || []).find(
+    const employee =
+    (this.rawEmployees || []).find(
         e =>
-        String(e.id) === String(j.userId) ||
-        String(e.userId) === String(j.userId)
-    );
+        String(e.id) === String(j.userId)
+    )
+    ||
+    (this.rawUsers || []).find(
+        u =>
+        String(u.id) === String(j.userId)
+    )
+    ||
+    {};
 
     console.log("J USER ID:", j.userId);
     console.log("FOUND EMPLOYEE:", employee);

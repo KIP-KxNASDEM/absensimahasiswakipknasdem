@@ -213,7 +213,6 @@ const adminEmployees = {
                 <td>${this.nimOf(emp)}</td>
                 <td>${this.campusOf(emp)}</td>
                 <td>${this.prodiOf(emp)}</td>
-                <td>${emp.position || '-'}</td>
                 <td><span class="status-badge ${emp.status}">${this.getStatusLabel(emp.status)}</span></td>
                 <td>
                     <button class="btn-action view" onclick="adminEmployees.viewEmployee(${emp.id})" title="Lihat"><i class="fas fa-eye"></i></button>

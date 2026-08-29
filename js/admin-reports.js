@@ -194,6 +194,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             api.getSettings()
         ]);
 
+        const j = await api.getAllJournals();
+
         console.log("J OBJECT >>>", j);
 
         this.rawEmployees = Array.isArray(e?.data)

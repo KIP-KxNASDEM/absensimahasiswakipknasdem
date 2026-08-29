@@ -515,6 +515,12 @@ adminReports.populateEmployeeFilter = function () {
     : Array.isArray(this.rawJournals)
         ? this.rawJournals
         : [];
+        journals.sort((a, b) => {
+            const namaA = a.name || '';
+            const namaB = b.name || '';
+            return namaA.localeCompare(namaB);
+        });
+        
     console.log(
         "RENDER JOURNAL:",
         journals

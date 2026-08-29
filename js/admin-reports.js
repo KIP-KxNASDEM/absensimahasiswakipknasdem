@@ -572,8 +572,8 @@ adminReports.populateEmployeeFilter = function () {
 
             <td>
                 ${
-                    j.photo 
-                    ? `<img src="${esc(j.photo)}" width="50">`
+                    employee?.avatar
+                    ? `<img src="${esc(employee.avatar)}" width="50" style = border-radius:8px">`
                     : '-'
                 }
             </td>

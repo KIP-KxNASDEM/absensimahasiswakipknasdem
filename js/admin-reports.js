@@ -185,7 +185,14 @@ const norm = v => String(v ?? '').trim().toLowerCase();
         cleanupAttendanceUi();
 
         try {
-           const [e,a,l,i,j,s] = await Promise.all([
+           const [
+               employeesRes,
+               attendanceRes,
+               leavesRes,
+               izinRes,
+               journalsRes,
+               settingsRes
+        ] = await Promise.all([
             api.getStudents(),
             api.getAllAttendance(),
             api.getAllLeaves(),
@@ -198,21 +205,27 @@ const norm = v => String(v ?? '').trim().toLowerCase();
 
         console.log("J OBJECT >>>", j);
 
-        this.rawEmployees = Array.isArray(e?.data)
-            ? e.data
+        this.rawEmployees = Array.isArray(employeesRes?.data)
+            ? employeesRes.data
             : [];
 
-        this.rawAttendance = Array.isArray(a?.data)
-            ? a.data
+        this.rawAttendance = Array.isArray(attendanceRes?.data)
+            ? attendanceRes.data
             : [];
 
-        this.rawLeaves = Array.isArray(l?.data)
-            ? l.data
+        this.rawLeaves = Array.isArray(leavesRes?.data)
+            ? leavesRes.data
             : [];
 
-        this.rawIzin = Array.isArray(i?.data)
-            ? i.data
+        this.rawIzin = Array.isArray(izinRes?.data)
+            ? izinRes.data
             : [];
+            
+        this.rawJournals = Array.isArray(journalsRes?.data)
+            ? journalsRes.data
+            : [];
+
+        this.settings = settingsRes?.data || {};
             
 
     // FIX JOURNAL

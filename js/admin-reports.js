@@ -580,7 +580,7 @@ adminReports.populateEmployeeFilter = function () {
 
             <td>
                 ${esc(j.achievements || '-')}
-            </td>
+            </td> 
 
         </tr>
         `;

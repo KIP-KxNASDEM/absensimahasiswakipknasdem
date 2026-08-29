@@ -202,6 +202,8 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             api.getSettings()
         ]);
 
+        console.log("USERS OBJECT >>>", u);
+
         const j = await api.getAllJournals();
 
         console.log("J OBJECT >>>", j);

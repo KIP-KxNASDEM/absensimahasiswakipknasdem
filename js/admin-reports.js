@@ -225,6 +225,11 @@ const norm = v => String(v ?? '').trim().toLowerCase();
             ? journalsRes.data
             : [];
 
+
+            console.log(
+                "FINAL JOURNAL DATA:",
+                this.rawJournals
+            );
         this.settings = settingsRes?.data || {};
             
 
@@ -642,8 +647,16 @@ adminReports.populateEmployeeFilter = function () {
 
 };
 
-     console.log("EXPORT ADMIN REPORTS", adminReports);
-     
-window.adminReports = adminReports;
-        
+    window.adminReports = adminReports;
+
+
+adminReports.initAttendanceReports();
+
+
+console.log(
+    "EXPORT ADMIN REPORTS",
+    adminReports
+);
+
+
 })();

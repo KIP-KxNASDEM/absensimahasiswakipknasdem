@@ -42,6 +42,12 @@ const router = {
             cuti: 'Pengajuan Cuti',
             'shift-schedule': 'Jadwal Shift',
             settings: 'Settings'
+
+              'admin-dashboard': 'Dashboard Admin',
+            employees: 'Data Mahasiswa',
+                'attendance-reports': 'Rekap Absensi',
+                'jurnal-reports': 'Rekap Jurnal',
+                'leave-reports': 'Rekap Cuti & Izin'
         };
 
         const company = storage.get('company', { name: 'Portal Mahasiswa' });
@@ -91,7 +97,11 @@ const router = {
                 if (window.initEmployees) window.initEmployees();
                 break;
             case 'attendance-reports':
-                this.loadAttendanceReportPatch();
+                if (window.initAttendanceReports) {
+                    window.initAttendanceReports();
+                } else {
+                    this.loadAttendanceReportPatch();
+                }
                 break;
             case 'jurnal-reports':
                 if (window.initJurnalReports) window.initJurnalReports();

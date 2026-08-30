@@ -376,7 +376,9 @@ const adminEmployees = {
     },
 
     viewEmployee(id) {
-        const emp = this.employees.find(e => e.id === id);
+        const emp = this.employees.find(
+            e => String(e.id) === String(id)
+        );
         if (emp) {
             alert(`Detail Mahasiswa:\n\nNama: ${emp.name}\nNIM: ${this.nimOf(emp)}\nEmail: ${emp.email}\nKampus: ${this.campusOf(emp)}\nProdi/Jurusan: ${this.prodiOf(emp)}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
         }

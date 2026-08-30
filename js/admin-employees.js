@@ -47,7 +47,7 @@ const adminEmployees = {
 
     ensureAcademicFields() {
         const form = document.getElementById('form-add-employee');
-        const position = document.getElementById('emp-position');
+        const position = document.getElementById('emp-position'); 
         if (!form || !position) return;
 
         // NIM
@@ -320,7 +320,6 @@ const adminEmployees = {
         const nim = document.getElementById('emp-nim')?.value.trim() || '';
         const kampus = document.getElementById('emp-kampus')?.value.trim() || '';
         const prodi = document.getElementById('emp-prodi')?.value.trim() || '';
-        const position = document.getElementById('emp-position').value.trim();
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
 
@@ -348,7 +347,6 @@ const adminEmployees = {
             campus: kampus,
             prodi,
             jurusan: prodi,
-            position,
             status,
             joinDate,
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${this.getRandomColor()}&color=fff`

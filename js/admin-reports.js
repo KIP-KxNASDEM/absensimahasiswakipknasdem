@@ -670,10 +670,9 @@
         window.adminReports = adminReports;
     
     
-    adminReports.initAttendanceReports = () => {
-        adminReports.init();
-    
-    };
+   window.initJurnalReports = function () {
+    adminReports.initAttendanceReports();
+};
     
     console.log(
         "EXPORT ADMIN REPORTS",

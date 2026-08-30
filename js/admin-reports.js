@@ -669,15 +669,10 @@
     
         window.adminReports = adminReports;
     
-    
    window.initJurnalReports = function () {
-    adminReports.initAttendanceReports();
-};
-    
-    console.log(
-        "EXPORT ADMIN REPORTS",
-        adminReports
-    );
+       console.log("INIT JURNAL REPORT DIPANGGIL");
+       adminReports.initAttendanceReports();
+   };
     
     })();
     

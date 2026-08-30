@@ -41,7 +41,7 @@ const router = {
             jurnal: 'Jurnal Kerja',
             cuti: 'Pengajuan Cuti',
             'shift-schedule': 'Jadwal Shift',
-            settings: 'Settings'
+            settings: 'Settings',
 
               'admin-dashboard': 'Dashboard Admin',
             employees: 'Data Mahasiswa',

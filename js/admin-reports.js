@@ -679,5 +679,3 @@ console.log(
     adminReports
 );
 
-
-})();

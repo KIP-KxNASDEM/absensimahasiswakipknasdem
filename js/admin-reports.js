@@ -670,7 +670,8 @@ adminReports.populateEmployeeFilter = function () {
     window.adminReports = adminReports;
 
 
-adminReports.initAttendanceReports();
+adminReports.initAttendanceReports = () => {
+    adminReports.init();
 
 
 console.log(

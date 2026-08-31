@@ -717,7 +717,7 @@
          
 
          
-    window.initJurnalReports = async fuction () {
+    window.initJurnalReports = async function () {
         
         console.log("INIT JURNAL REPORT DIPANGGIL");
        

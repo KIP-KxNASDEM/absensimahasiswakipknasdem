@@ -162,7 +162,6 @@
         await loadStudents();
         patchPageTitle();
         patchAttendanceTable();
-        //patchSimpleReportTable('jurnal-reports-table');
         patchSimpleReportTable('leave-reports-table');
         patchFilters();
     }

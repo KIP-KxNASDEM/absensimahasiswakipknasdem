@@ -262,6 +262,13 @@ const mobile = {
             const table = container.querySelector('table');
             const mobileCards = container.nextElementSibling;
             if (table && mobileCards?.classList.contains('mobile-cards')) {
+
+                // Admin reports tetap tampil tabel
+                if (container.closest('.reports-table-card')) {
+                container.style.display = 'block';
+                mobileCards.style.display = 'none';
+                return;
+            }
                 container.style.display = this.isMobile ? 'none' : 'block';
                 mobileCards.style.display = this.isMobile ? 'block' : 'none';
             }
@@ -273,8 +280,8 @@ const mobile = {
         if (!bottomNav) return;
         bottomNav.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.toggle('active', item.dataset.page === page));
         this.syncAdminBottomNav();
-    }
-};
+    },
+}
 
 document.addEventListener('touchstart', handleTouchStart, { passive: true });
 document.addEventListener('touchmove', handleTouchMove, { passive: true });

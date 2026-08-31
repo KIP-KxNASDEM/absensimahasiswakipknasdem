@@ -716,9 +716,9 @@
     window.adminReports = adminReports;
 
          
-    window.initJurnalReports = async adminReports () {
-       
-       console.log("INIT JURNAL REPORT DIPANGGIL");
+    window.initJurnalReports = async adminReports (){
+        
+        console.log("INIT JURNAL REPORT DIPANGGIL");
        
        await admidReports.initJournalReports();
     

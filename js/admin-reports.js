@@ -714,15 +714,16 @@
 };
          
     window.adminReports = adminReports;
+         
 
          
     window.initJurnalReports = async fuction () {
         
         console.log("INIT JURNAL REPORT DIPANGGIL");
        
-       await admidReports.initJournalReports();
+       await adminReports.initJournalReports();
     
 };
     
-    })();
+})();
     

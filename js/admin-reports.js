@@ -666,13 +666,63 @@
         }
     
     };
+
+         adminReports.initJournalReports = async function(){
+
+    try {
+
+        const [
+            j,
+            e
+        ] = await Promise.all([
+            api.getAllJournals(),
+            api.getStudents()
+        ]);
+
+
+        this.rawJournals = Array.isArray(j?.data)
+            ? j.data
+            : [];
+
+
+        this.rawEmployees = Array.isArray(e?.data)
+            ? e.data
+            : [];
+
+
+        this.journalData = [...this.rawJournals];
+
+
+        console.log(
+            "JOURNAL ONLY LOADED:",
+            this.journalData
+        );
+
+
+        this.renderJournalReports();
+
+
+    } catch(err){
+
+        console.error(
+            "JOURNAL REPORT ERROR:",
+            err
+        );
+
+    }
+
+};
+         
+    window.adminReports = adminReports;
     
-        window.adminReports = adminReports;
-    
-   window.initJurnalReports = function () {
+    window.initJurnalReports = function () {
+       
        console.log("INIT JURNAL REPORT DIPANGGIL");
-       adminReports.initAttendanceReports();
-   };
+       
+       await admidReports.initJournalReports();
+
+    adminReports.renderJournalReports();
+};
     
     })();
     

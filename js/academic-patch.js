@@ -132,7 +132,6 @@
     function patchFilters() {
         [
             {table:'attendance-reports-table', anchor:'attendance-month'},
-            {table:'jurnal-reports-table', anchor:'jurnal-month'},
             {table:'leave-reports-table', anchor:'leave-month'}
         ].forEach(({table,anchor}) => {
             const anchorInput = document.getElementById(anchor);
@@ -163,7 +162,7 @@
         await loadStudents();
         patchPageTitle();
         patchAttendanceTable();
-        patchSimpleReportTable('jurnal-reports-table');
+        //patchSimpleReportTable('jurnal-reports-table');
         patchSimpleReportTable('leave-reports-table');
         patchFilters();
     }
